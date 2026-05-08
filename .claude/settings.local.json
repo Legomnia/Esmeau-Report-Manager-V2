@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm list *)",
+      "Bash(npm run *)",
+      "Bash(sleep 3 && tail -20 \"/tmp/claude/C--Users-berta-OneDrive-Bureau-Perso-Esmeau-ESMEAU-Report-Manager-V2/2f77ea63-ee49-4e49-9365-39f102275586/tasks/buwfxs1m5.output\" 2>/dev/null || echo \"Waiting for server...\")"
+    ]
+  }
+}
