@@ -330,8 +330,8 @@ ${(r.etapes||[]).map((e,i)=>`<p class="step">&#10003;&nbsp; Etape ${i+1}&nbsp;: 
 };
 
 const doPrint=r=>{const w=window.open('','_blank','width=900,height=750');if(!w){alert("Autorisez les pop-ups.");return;}w.document.write(generatePrintHTML(r));w.document.close();};
-const doWhatsApp=r=>{const recs=(r.recommandations||'').split('\n').filter(Boolean).slice(0,4).map(l=>`  • ${l.replace(/^\d+\.\s*/,'')}`).join('\n');const txt=[`📋 *RAPPORT ESMEAU – ${r.id}*`,``,`*Client :* ${r.clientCivilite} ${r.clientNom}`.trim(),`*Date :* ${fmtDate(r.date)}`,`*Adresse :* ${r.interventionAddress||r.address}`,``,`*Problème :*`,r.problemType,``,`*Conclusion :*`,(r.conclusion||'').slice(0,280)+(r.conclusion?.length>280?'…':''),``,`*Recommandations :*`,recs,``,`_Société ESMEAU – RCCM SN.DKR.2022.A.17941_`].join('\n');window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');};
-const doEmail=r=>{const subj=`Rapport ESMEAU – N° ${r.id} – ${r.clientCivilite} ${r.clientNom}`;const body=[`RAPPORT DE RECHERCHE DE FUITES – ESMEAU`,``,`N° dossier : ${r.id}  |  Date : ${fmtDate(r.date)}`,`Client : ${r.clientCivilite} ${r.clientNom} ${r.clientPrenom}`.trim(),`Tél : ${r.clientPhone||'N/A'}  |  Email : ${r.clientEmail||'N/A'}`,`Adresse : ${r.interventionAddress||r.address}`,``,`1. OBJET`,r.objet||'',``,`2. CONSTATATIONS`,r.constatations||'',``,`3. BÂTIMENT : ${r.batiment}`,``,`4. ALIMENTATION EAU POTABLE`,`Schéma : ${r.alimentationConfig||''}`,`Composition : ${r.alimentationComposition||''}`,`Points d'accès : ${r.alimentationPointsAcces||''}`,`Observations : ${r.alimentationNotes||''}`,``,`5. MÉTHODOLOGIE & RÉSULTATS`,...(r.etapes||[]).flatMap((e,i)=>[`Étape ${i+1} : ${e.titre}`,`  Méthode : ${e.methodologie}`,`  Résultat : ${e.resultat}`,`  Conclusion : ${e.conclusion}`,``]),`6. CONCLUSION`,r.conclusion||'',``,`7. RECOMMANDATIONS`,r.recommandations||'',``,`─────────────────────────`,`Les recommandations formulées constituent des préconisations fournies par la société ESMEAU à titre informatif. Leur mise en œuvre relève exclusivement de la responsabilité du client.`,``,`Ent. ESMEAU – RCCM : SN.DKR.2022.A.17941 – NINEA : 009436561 1Y1`,`Non assujetti à la TVA (Régime CGU) - BRS à reverser à la DGID - Article 321 du CGI`].join('\n');window.location.href=`mailto:${r.clientEmail||''}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;};
+const doWhatsApp=r=>{if(!settingsWhatsAppEnabled){alert("Le partage WhatsApp n'est pas activé dans les paramètres.");return;}const phoneNumber=settingsWhatsAppNumber.trim();if(!phoneNumber){alert("Veuillez configurer le numéro WhatsApp dans les paramètres.");return;}const recs=(r.recommandations||'').split('\n').filter(Boolean).slice(0,4).map(l=>`  • ${l.replace(/^\d+\.\s*/,'')}`).join('\n');const txt=[`📋 *RAPPORT ${settingsCompanyName} – ${r.id}*`,``,`*Client :* ${r.clientCivilite} ${r.clientNom}`.trim(),`*Date :* ${fmtDate(r.date)}`,`*Adresse :* ${r.interventionAddress||r.address}`,``,`*Problème :*`,r.problemType,``,`*Conclusion :*`,(r.conclusion||'').slice(0,280)+(r.conclusion?.length>280?'…':''),``,`*Recommandations :*`,recs,``,settingsWhatsAppMessage?`_${settingsWhatsAppMessage}_`:`_Société ${settingsCompanyName} – RCCM ${settingsCompanyRCCM}_`].join('\n');window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`,'_blank');};
+const doEmail=r=>{if(!settingsEmailEnabled){alert("Le partage Email n'est pas activé dans les paramètres.");return;}const subj=`Rapport ${settingsCompanyName} – N° ${r.id} – ${r.clientCivilite} ${r.clientNom}`;const signature=[``,`─────────────────────────`,settingsEmailSignature,``,`Ent. ${settingsCompanyName} – RCCM : ${settingsCompanyRCCM} – NINEA : ${settingsCompanyNINEA}`,`Non assujetti à la TVA (Régime CGU) - BRS à reverser à la DGID - Article 321 du CGI`].join('\n');const body=[`RAPPORT DE RECHERCHE DE FUITES – ${settingsCompanyName}`,``,`N° dossier : ${r.id}  |  Date : ${fmtDate(r.date)}`,`Client : ${r.clientCivilite} ${r.clientNom} ${r.clientPrenom}`.trim(),`Tél : ${r.clientPhone||'N/A'}  |  Email : ${r.clientEmail||'N/A'}`,`Adresse : ${r.interventionAddress||r.address}`,``,`1. OBJET`,r.objet||'',``,`2. CONSTATATIONS`,r.constatations||'',``,`3. BÂTIMENT : ${r.batiment}`,``,`4. ALIMENTATION EAU POTABLE`,`Schéma : ${r.alimentationConfig||''}`,`Composition : ${r.alimentationComposition||''}`,`Points d'accès : ${r.alimentationPointsAcces||''}`,`Observations : ${r.alimentationNotes||''}`,``,`5. MÉTHODOLOGIE & RÉSULTATS`,...(r.etapes||[]).flatMap((e,i)=>[`Étape ${i+1} : ${e.titre}`,`  Méthode : ${e.methodologie}`,`  Résultat : ${e.resultat}`,`  Conclusion : ${e.conclusion}`,``]),`6. CONCLUSION`,r.conclusion||'',``,`7. RECOMMANDATIONS`,r.recommandations||'',signature].join('\n');window.location.href=`mailto:${r.clientEmail||''}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;};
 
 const defSP = () => ({infos:[],objet:[],constatations:[],config:[],alimentation:[],moyens:[],conclusion:[],recommandations:[]});
 
@@ -624,6 +624,25 @@ export default function App() {
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
   const [googleCalendarEmail, setGoogleCalendarEmail] = useState("");
 
+  // Settings state hooks
+  const [settingsAutoSave, setSettingsAutoSave] = useState(true);
+  const [settingsWhatsAppEnabled, setSettingsWhatsAppEnabled] = useState(false);
+  const [settingsWhatsAppNumber, setSettingsWhatsAppNumber] = useState("");
+  const [settingsWhatsAppMessage, setSettingsWhatsAppMessage] = useState("");
+  const [settingsEmailEnabled, setSettingsEmailEnabled] = useState(false);
+  const [settingsEmailFrom, setSettingsEmailFrom] = useState("contact@esmeau.com");
+  const [settingsEmailSignature, setSettingsEmailSignature] = useState("Cordialement,\nL'équipe ESMEAU");
+  const [settingsAIEnabled, setSettingsAIEnabled] = useState(false);
+  const [settingsAIProvider, setSettingsAIProvider] = useState("claude");
+  const [settingsAIModel, setSettingsAIModel] = useState("claude-3.5-sonnet");
+  const [settingsAIKey, setSettingsAIKey] = useState("");
+  const [settingsAIAssistance_conclusions, setSettingsAIAssistance_conclusions] = useState(false);
+  const [settingsAIAssistance_recommendations, setSettingsAIAssistance_recommendations] = useState(false);
+  const [settingsAIAssistance_validation, setSettingsAIAssistance_validation] = useState(false);
+  const [settingsCompanyName, setSettingsCompanyName] = useState("ESMEAU");
+  const [settingsCompanyRCCM, setSettingsCompanyRCCM] = useState("SN.DKR.2022.A.17941");
+  const [settingsCompanyNINEA, setSettingsCompanyNINEA] = useState("009436561 1Y1");
+
   /* ─── LOCAL STORAGE PERSISTENCE ─── */
   useEffect(() => {
     const saved = localStorage.getItem('esmeau_reports');
@@ -639,6 +658,63 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('esmeau_reports', JSON.stringify(reports));
   }, [reports]);
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('esmeau_settings');
+    if (savedSettings) {
+      try {
+        const settings = JSON.parse(savedSettings);
+        if (settings.settingsAutoSave !== undefined) setSettingsAutoSave(settings.settingsAutoSave);
+        if (settings.settingsWhatsAppEnabled !== undefined) setSettingsWhatsAppEnabled(settings.settingsWhatsAppEnabled);
+        if (settings.settingsWhatsAppNumber !== undefined) setSettingsWhatsAppNumber(settings.settingsWhatsAppNumber);
+        if (settings.settingsWhatsAppMessage !== undefined) setSettingsWhatsAppMessage(settings.settingsWhatsAppMessage);
+        if (settings.settingsEmailEnabled !== undefined) setSettingsEmailEnabled(settings.settingsEmailEnabled);
+        if (settings.settingsEmailFrom !== undefined) setSettingsEmailFrom(settings.settingsEmailFrom);
+        if (settings.settingsEmailSignature !== undefined) setSettingsEmailSignature(settings.settingsEmailSignature);
+        if (settings.settingsAIEnabled !== undefined) setSettingsAIEnabled(settings.settingsAIEnabled);
+        if (settings.settingsAIProvider !== undefined) setSettingsAIProvider(settings.settingsAIProvider);
+        if (settings.settingsAIModel !== undefined) setSettingsAIModel(settings.settingsAIModel);
+        if (settings.settingsAIKey !== undefined) setSettingsAIKey(settings.settingsAIKey);
+        if (settings.settingsAIAssistance_conclusions !== undefined) setSettingsAIAssistance_conclusions(settings.settingsAIAssistance_conclusions);
+        if (settings.settingsAIAssistance_recommendations !== undefined) setSettingsAIAssistance_recommendations(settings.settingsAIAssistance_recommendations);
+        if (settings.settingsAIAssistance_validation !== undefined) setSettingsAIAssistance_validation(settings.settingsAIAssistance_validation);
+        if (settings.settingsCompanyName !== undefined) setSettingsCompanyName(settings.settingsCompanyName);
+        if (settings.settingsCompanyRCCM !== undefined) setSettingsCompanyRCCM(settings.settingsCompanyRCCM);
+        if (settings.settingsCompanyNINEA !== undefined) setSettingsCompanyNINEA(settings.settingsCompanyNINEA);
+      } catch (e) {
+        console.error('Failed to load settings from localStorage:', e);
+      }
+    }
+  }, []);
+
+  // Save settings to localStorage with debounce (500ms)
+  useEffect(() => {
+    const settingsTimeout = setTimeout(() => {
+      const allSettings = {
+        settingsAutoSave,
+        settingsWhatsAppEnabled,
+        settingsWhatsAppNumber,
+        settingsWhatsAppMessage,
+        settingsEmailEnabled,
+        settingsEmailFrom,
+        settingsEmailSignature,
+        settingsAIEnabled,
+        settingsAIProvider,
+        settingsAIModel,
+        settingsAIKey,
+        settingsAIAssistance_conclusions,
+        settingsAIAssistance_recommendations,
+        settingsAIAssistance_validation,
+        settingsCompanyName,
+        settingsCompanyRCCM,
+        settingsCompanyNINEA
+      };
+      localStorage.setItem('esmeau_settings', JSON.stringify(allSettings));
+    }, 500);
+    return () => clearTimeout(settingsTimeout);
+  }, [settingsAutoSave, settingsWhatsAppEnabled, settingsWhatsAppNumber, settingsWhatsAppMessage, settingsEmailEnabled, settingsEmailFrom, settingsEmailSignature, settingsAIEnabled, settingsAIProvider, settingsAIModel, settingsAIKey, settingsAIAssistance_conclusions, settingsAIAssistance_recommendations, settingsAIAssistance_validation, settingsCompanyName, settingsCompanyRCCM, settingsCompanyNINEA]);
+
   const openNew=useCallback(()=>{setReport(newReport());setSection(0);setEditing(true);setView("form");}, []);
   const openEdit=useCallback(r=>{setReport({...r});setSection(0);setEditing(true);setView("form");}, []);
   const openView=useCallback(r=>{setReport({...r});setSection(0);setEditing(false);setView("form");}, []);
@@ -1403,6 +1479,26 @@ export default function App() {
     );
   }
 
+  // Toggle component
+  const Toggle = ({ value, onChange, label, description }) => (
+    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
+      <div>
+        <div className="font-medium text-slate-800">{label}</div>
+        <div className="text-sm text-slate-500">{description}</div>
+      </div>
+      <button
+        onClick={() => onChange(!value)}
+        className={`w-12 h-6 rounded-full relative transition-colors ${
+          value ? 'bg-blue-600' : 'bg-slate-300'
+        }`}
+      >
+        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
+          value ? 'right-1' : 'left-1'
+        }`}/>
+      </button>
+    </div>
+  );
+
   /* ── SETTINGS PAGE ── */
   if(view==="settings") {
     console.log("Vue settings atteinte");
@@ -1424,21 +1520,21 @@ export default function App() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-800">Informations de l'entreprise</h2>
-                <p className="text-sm text-slate-500">Détails de votre société ESMEAU</p>
+                <p className="text-sm text-slate-500">Détails de votre société</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'entreprise</label>
-                <input type="text" defaultValue="ESMEAU" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <input type="text" value={settingsCompanyName} onChange={(e) => setSettingsCompanyName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">RCCM</label>
-                <input type="text" defaultValue="SN.DKR.2022.A.17941" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <input type="text" value={settingsCompanyRCCM} onChange={(e) => setSettingsCompanyRCCM(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">NINEA</label>
-                <input type="text" defaultValue="009436561 1Y1" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <input type="text" value={settingsCompanyNINEA} onChange={(e) => setSettingsCompanyNINEA(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
               </div>
             </div>
           </Card>
@@ -1454,18 +1550,7 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-slate-800">Sauvegarde automatique</div>
-                  <div className="text-sm text-slate-500">Les rapports sont sauvegardés localement</div>
-                </div>
-                <div className="w-12 h-6 bg-blue-600 rounded-full relative">
-                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                </div>
-              </div>
-              <button className="w-full px-4 py-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition font-medium">
-                Supprimer tous les rapports
-              </button>
+              <Toggle value={settingsAutoSave} onChange={setSettingsAutoSave} label="Sauvegarde automatique" description="Les rapports sont sauvegardés localement" />
             </div>
           </Card>
 
@@ -1484,22 +1569,14 @@ export default function App() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Numéro WhatsApp par défaut</label>
-                <input type="tel" placeholder="+221 77 XXX XX XX" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                <p className="text-xs text-slate-500 mt-1">Ce numéro sera pré-rempli lors de l'envoi de rapports</p>
+                <input type="tel" placeholder="+221 77 XXX XX XX" value={settingsWhatsAppNumber} onChange={(e) => setSettingsWhatsAppNumber(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <p className="text-xs text-slate-500 mt-1">Avec le code pays (ex: +221 77...)</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Message personnalisé</label>
-                <textarea rows="3" placeholder="Message par défaut pour les rapports WhatsApp..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
+                <textarea rows="3" placeholder="Message par défaut pour les rapports WhatsApp..." value={settingsWhatsAppMessage} onChange={(e) => setSettingsWhatsAppMessage(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
               </div>
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-slate-800">Activer l'envoi WhatsApp</div>
-                  <div className="text-sm text-slate-500">Permet d'envoyer les rapports directement via WhatsApp</div>
-                </div>
-                <div className="w-12 h-6 bg-green-600 rounded-full relative">
-                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                </div>
-              </div>
+              <Toggle value={settingsWhatsAppEnabled} onChange={setSettingsWhatsAppEnabled} label="Activer l'envoi WhatsApp" description="Permet d'envoyer les rapports directement via WhatsApp" />
             </div>
           </Card>
 
@@ -1516,22 +1593,14 @@ export default function App() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Email de l'expéditeur</label>
-                <input type="email" placeholder="contact@esmeau.com" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                <p className="text-xs text-slate-500 mt-1">Adresse email utilisée pour envoyer les rapports</p>
+                <input type="email" placeholder="contact@esmeau.com" value={settingsEmailFrom} onChange={(e) => setSettingsEmailFrom(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <p className="text-xs text-slate-500 mt-1">Adresse email qui apparaîtra dans le rapport</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Signature email</label>
-                <textarea rows="3" placeholder="Cordialement,\nL'équipe ESMEAU\nRCCM: SN.DKR.2022.A.17941" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
+                <textarea rows="3" placeholder="Cordialement,\nL'équipe ESMEAU" value={settingsEmailSignature} onChange={(e) => setSettingsEmailSignature(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
               </div>
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div>
-                  <div className="font-medium text-slate-800">Activer l'envoi email</div>
-                  <div className="text-sm text-slate-500">Permet d'envoyer les rapports directement par email</div>
-                </div>
-                <div className="w-12 h-6 bg-blue-600 rounded-full relative">
-                  <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                </div>
-              </div>
+              <Toggle value={settingsEmailEnabled} onChange={setSettingsEmailEnabled} label="Activer l'envoi email" description="Permet d'envoyer les rapports directement par email" />
             </div>
           </Card>
 
@@ -1548,84 +1617,29 @@ export default function App() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Fournisseur API</label>
-                <select className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400">
-                  <option>OpenRouter</option>
-                  <option>OpenAI</option>
-                  <option>Anthropic Claude</option>
-                  <option>Google Gemini</option>
+                <select value={settingsAIProvider} onChange={(e) => setSettingsAIProvider(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400">
+                  <option value="claude">Anthropic Claude</option>
+                  <option value="openai">OpenAI</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Modèle IA</label>
+                <input type="text" placeholder="claude-3.5-sonnet" value={settingsAIModel} onChange={(e) => setSettingsAIModel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <p className="text-xs text-slate-500 mt-1">Exemple: claude-3.5-sonnet ou gpt-4o</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Clé API</label>
                 <div className="relative">
-                  <input type="password" placeholder="sk-or-v1-..." className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                  <button type="button" className="absolute right-2 top-2.5 text-slate-400 hover:text-slate-600">
-                    <Eye size={16} />
-                  </button>
+                  <input type="password" placeholder="sk-..." value={settingsAIKey} onChange={(e) => setSettingsAIKey(e.target.value)} className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Votre clé API reste confidentielle et stockée localement</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Modèle IA</label>
-                <select className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400">
-                  <option>gpt-4o-mini</option>
-                  <option>gpt-4o</option>
-                  <option>claude-3-haiku</option>
-                  <option>claude-3-sonnet</option>
-                  <option>gemini-pro</option>
-                </select>
+                <p className="text-xs text-slate-500 mt-1">⚠️ Votre clé API reste confidentielle et stockée localement</p>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                  <div>
-                    <div className="font-medium text-slate-800">Assistance rédaction conclusions</div>
-                    <div className="text-sm text-slate-500">L'IA vous aide à rédiger les conclusions des rapports</div>
-                  </div>
-                  <div className="w-12 h-6 bg-purple-600 rounded-full relative">
-                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                  <div>
-                    <div className="font-medium text-slate-800">Assistance rédaction recommandations</div>
-                    <div className="text-sm text-slate-500">L'IA suggère des recommandations basées sur les constats</div>
-                  </div>
-                  <div className="w-12 h-6 bg-slate-300 rounded-full relative">
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                  <div>
-                    <div className="font-medium text-slate-800">Vérification automatique</div>
-                    <div className="text-sm text-slate-500">L'IA vérifie la cohérence du rapport</div>
-                  </div>
-                  <div className="w-12 h-6 bg-slate-300 rounded-full relative">
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-                  </div>
-                </div>
+                <Toggle value={settingsAIAssistance_conclusions} onChange={setSettingsAIAssistance_conclusions} label="Assistance rédaction conclusions" description="L'IA vous aide à rédiger les conclusions des rapports" />
+                <Toggle value={settingsAIAssistance_recommendations} onChange={setSettingsAIAssistance_recommendations} label="Assistance rédaction recommandations" description="L'IA suggère des recommandations basées sur les constats" />
+                <Toggle value={settingsAIAssistance_validation} onChange={setSettingsAIAssistance_validation} label="Vérification automatique" description="L'IA vérifie la cohérence du rapport" />
               </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-50 to-blue-100 flex items-center justify-center">
-                <WI name="settings" size={20} color="#1d4ed8"/>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-slate-800">Apparence</h2>
-                <p className="text-sm text-slate-500">Personnalisation de l'interface</p>
-              </div>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Thème</label>
-                <select className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400">
-                  <option>Clair (par défaut)</option>
-                  <option>Sombre</option>
-                  <option>Automatique</option>
-                </select>
-              </div>
+              <Toggle value={settingsAIEnabled} onChange={setSettingsAIEnabled} label="Activer l'IA" description="Active toutes les fonctionnalités d'assistance IA" />
             </div>
           </Card>
 
