@@ -1025,6 +1025,18 @@ export default function App() {
                     <div className="font-medium text-slate-800">{new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
                     <div className="text-xs text-slate-500">{new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Êtes-vous sûr de vouloir annuler cette intervention pour ${r.clientNom} ${r.clientPrenom} ?`)) {
+                        setReports(prev => prev.filter(report => report.id !== r.id));
+                      }
+                    }}
+                    className="p-2 text-slate-300 hover:text-red-600 hover:bg-red-50 rounded-lg transition flex-shrink-0"
+                    title="Annuler l'intervention"
+                  >
+                    <Trash2 size={16} strokeWidth={1.5} />
+                  </button>
                 </div>
               ))}
             </div>
