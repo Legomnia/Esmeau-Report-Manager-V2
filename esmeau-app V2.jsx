@@ -218,6 +218,12 @@ const WI = ({ name, size = 20, color = "currentColor", className = "" }) => {
       <polyline points="14 2 14 8 20 8"/>
       <path d="M9 13h6M9 17h6"/>
     </svg>,
+
+    /* User — person circle */
+    user: <svg {...s}>
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M6 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/>
+    </svg>,
   };
   return icons[name] ?? <svg {...s}><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01" strokeWidth="2"/></svg>;
 };
@@ -692,6 +698,7 @@ export default function App() {
   const [planningClient, setPlanningClient] = useState({ nom: "", prenom: "" });
   const [planningAddress, setPlanningAddress] = useState("");
   const [planningProblem, setPlanningProblem] = useState("");
+  const [planningTechnicien, setPlanningTechnicien] = useState("");
 
   // Hooks for Google Calendar integration
   const [googleCalendarConnected, setGoogleCalendarConnected] = useState(false);
@@ -1827,6 +1834,7 @@ export default function App() {
         address: planningAddress,
         interventionAddress: planningAddress,
         problemType: planningProblem,
+        technicien: planningTechnicien,
         status: "brouillon",
         objet: "",
         constatations: "",
@@ -1850,6 +1858,7 @@ export default function App() {
       setPlanningClient({ nom: "", prenom: "" });
       setPlanningAddress("");
       setPlanningProblem("");
+      setPlanningTechnicien("");
       alert("Intervention programmée avec succès!");
     };
 
@@ -1948,8 +1957,20 @@ export default function App() {
                     <input type="text" value={planningProblem} onChange={(e) => setPlanningProblem(e.target.value)} placeholder="Ex: Fuite d'eau, Infiltrations..." className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Technicien intervenant</label>
+                    <input type="text" value={planningTechnicien} onChange={(e) => setPlanningTechnicien(e.target.value)} placeholder="Ex: Jean Dupont" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  </div>
+
                   <div className="flex gap-3 pt-4">
-                    <button onClick={() => setPlanningModal(false)} className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition font-medium">
+                    <button onClick={() => {
+                      setPlanningModal(false);
+                      setPlanningDate("");
+                      setPlanningClient({ nom: "", prenom: "" });
+                      setPlanningAddress("");
+                      setPlanningProblem("");
+                      setPlanningTechnicien("");
+                    }} className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition font-medium">
                       Annuler
                     </button>
                     <button onClick={handleScheduleIntervention} className="flex-1 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition font-medium">
@@ -2069,6 +2090,12 @@ export default function App() {
                           <WI name="location" size={14} color="#64748b" />
                           {r.address}
                         </div>
+                        {r.technicien && (
+                          <div className="text-sm text-slate-600 flex items-center gap-2 mt-1">
+                            <WI name="user" size={14} color="#64748b" />
+                            {r.technicien}
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
                           <WI name="calendar" size={12} color="#94a3b8" />
                           {new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -2082,13 +2109,26 @@ export default function App() {
                         }`}>
                           {r.status}
                         </span>
-                        <button
-                          onClick={() => exportToICS(r)}
-                          className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition text-xs whitespace-nowrap"
-                          title="Exporter en ICS"
-                        >
-                          <WI name="download" size={14} />
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => exportToICS(r)}
+                            className="p-1.5 text-slate-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition text-xs whitespace-nowrap"
+                            title="Exporter en ICS"
+                          >
+                            <WI name="download" size={14} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Êtes-vous sûr de vouloir annuler cette intervention pour ${r.clientNom} ${r.clientPrenom} ?`)) {
+                                setReports(prev => prev.filter(report => report.id !== r.id));
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition text-xs"
+                            title="Annuler l'intervention"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -2127,12 +2167,18 @@ export default function App() {
                           <WI name="location" size={14} color="#64748b" />
                           {r.address}
                         </div>
+                        {r.technicien && (
+                          <div className="text-sm text-slate-600 flex items-center gap-2 mt-1">
+                            <WI name="user" size={14} color="#64748b" />
+                            {r.technicien}
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500 flex items-center gap-2 mt-1">
                           <WI name="calendar" size={12} color="#94a3b8" />
                           {new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                         </div>
                       </div>
-                      <div className="flex-shrink-0">
+                      <div className="flex flex-col gap-2 flex-shrink-0">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           r.status === 'finalisé' ? 'bg-green-100 text-green-700' :
                           r.status === 'en cours' ? 'bg-blue-100 text-blue-700' :
@@ -2140,6 +2186,17 @@ export default function App() {
                         }`}>
                           {r.status}
                         </span>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Êtes-vous sûr de vouloir annuler cette intervention pour ${r.clientNom} ${r.clientPrenom} ?`)) {
+                              setReports(prev => prev.filter(report => report.id !== r.id));
+                            }
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition text-xs self-start"
+                          title="Annuler l'intervention"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}
