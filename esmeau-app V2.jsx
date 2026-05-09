@@ -408,9 +408,12 @@ const ShareModal=({report,onClose})=>(<div style={{position:"fixed",inset:0,back
 
 /* ─── NAVBAR ─── */
 const Navbar = ({ currentView, setView, setReport, setSection, setEditing }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const handleNavigate = (viewName) => {
     console.log(`Navigation vers: ${viewName}`);
     setView(viewName);
+    setMobileMenuOpen(false);
   };
 
   const handleCreateNewReport = () => {
@@ -454,9 +457,10 @@ const Navbar = ({ currentView, setView, setReport, setSection, setEditing }) => 
   };
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm border-b border-slate-200/50 px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-lg" role="navigation">
-      <div className="flex items-center gap-4">
+    <nav className="bg-white/95 backdrop-blur-sm border-b border-slate-200/50 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-10 shadow-lg" role="navigation">
+      <div className="flex items-center gap-2 md:gap-4">
         <Logo />
+        {/* Menu desktop */}
         <div className="hidden md:flex items-center gap-1">
           <button
             onClick={() => handleNavigate("dashboard")}
@@ -470,7 +474,7 @@ const Navbar = ({ currentView, setView, setReport, setSection, setEditing }) => 
             <LayoutGrid size={16} strokeWidth={1.5} className={currentView === "dashboard" ? "text-blue-700" : "text-slate-500"} />
             Tableau de bord
           </button>
-          
+
           <button
             onClick={() => handleNavigate("reports")}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -483,7 +487,7 @@ const Navbar = ({ currentView, setView, setReport, setSection, setEditing }) => 
             <WI name="reports" size={16} color={currentView === "reports" ? "#1d4ed8" : "#64748b"} />
             Rapports
           </button>
-          
+
           <button
             onClick={() => handleNavigate("planning")}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -510,18 +514,87 @@ const Navbar = ({ currentView, setView, setReport, setSection, setEditing }) => 
             Paramètres
           </button>
         </div>
+
+        {/* Menu hamburger mobile */}
+        <div className="md:hidden relative">
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition"
+            aria-label="Menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          {/* Dropdown menu mobile */}
+          {mobileMenuOpen && (
+            <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-50">
+              <button
+                onClick={() => handleNavigate("dashboard")}
+                className={`w-full flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
+                  currentView === "dashboard"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <LayoutGrid size={16} strokeWidth={1.5} className={currentView === "dashboard" ? "text-blue-700" : "text-slate-500"} />
+                Tableau de bord
+              </button>
+
+              <button
+                onClick={() => handleNavigate("reports")}
+                className={`w-full flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-t border-slate-100 ${
+                  currentView === "reports"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <WI name="reports" size={16} color={currentView === "reports" ? "#1d4ed8" : "#64748b"} />
+                Rapports
+              </button>
+
+              <button
+                onClick={() => handleNavigate("planning")}
+                className={`w-full flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-t border-slate-100 ${
+                  currentView === "planning"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <CalendarDays size={16} strokeWidth={1.5} className={currentView === "planning" ? "text-blue-700" : "text-slate-500"} />
+                Planning
+              </button>
+
+              <button
+                onClick={() => handleNavigate("settings")}
+                className={`w-full flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all border-t border-slate-100 ${
+                  currentView === "settings"
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <WI name="settings" size={16} color={currentView === "settings" ? "#1d4ed8" : "#64748b"} />
+                Paramètres
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-      
-      <div className="flex items-center gap-3">
+
+      <div className="flex items-center gap-2 md:gap-3">
         <span className="text-xs text-slate-400 hidden md:block">Rapports · Recherche de Fuites</span>
         {(currentView === "dashboard" || currentView === "reports" || currentView === "planning") && (
           <button
             onClick={handleCreateNewReport}
-            className="flex items-center gap-1.5 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold hover:bg-blue-800 transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-blue-700 text-white rounded-xl text-xs md:text-sm font-semibold hover:bg-blue-800 transition shadow-sm"
             aria-label="Créer un nouveau rapport"
           >
             <Plus size={15} />
-            Nouveau Rapport
+            <span className="hidden sm:inline">Nouveau Rapport</span>
+            <span className="sm:hidden">Nouveau</span>
           </button>
         )}
       </div>
