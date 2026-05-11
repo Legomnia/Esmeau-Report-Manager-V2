@@ -349,19 +349,18 @@ const newReport=()=>({id:`${String(Math.floor(Math.random()*900)+100).padStart(3
 /* ─── SECTIONS — 15 with specific icons ─── */
 const SECTIONS=[
   {id:0,  icon:"id_card",       label:"Informations générales"},
-  {id:1,  icon:"id_card",       label:"Tiers responsables"},
-  {id:2,  icon:"clipboard_drop",label:"Objet de l'intervention"},
-  {id:3,  icon:"magnify",       label:"Constatations sur place"},
-  {id:4,  icon:"floor_plan",    label:"Configuration des lieux"},
-  {id:5,  icon:"pipe_net",      label:"Alimentation eau potable"},
-  {id:6,  icon:"pipe_net",      label:"Évacuations & ECS/Chauffage"},
-  {id:7,  icon:"toolbox",       label:"Moyens techniques"},
-  {id:8,  icon:"meter",         label:"Étape 1 · Compteur"},
-  {id:9,  icon:"gauge",         label:"Étape 2 · Pression"},
-  {id:10, icon:"drip",          label:"Étape 3 · Infiltration"},
-  {id:11, icon:"pipe_target",   label:"Étape 4 · Origine"},
-  {id:12, icon:"doc_check",     label:"Conclusion"},
-  {id:13, icon:"checklist",     label:"Recommandations"},
+  {id:1,  icon:"clipboard_drop",label:"Objet de l'intervention"},
+  {id:2,  icon:"magnify",       label:"Constatations sur place"},
+  {id:3,  icon:"floor_plan",    label:"Configuration des lieux"},
+  {id:4,  icon:"pipe_net",      label:"Alimentation eau potable"},
+  {id:5,  icon:"pipe_net",      label:"Évacuations & ECS/Chauffage"},
+  {id:6,  icon:"toolbox",       label:"Moyens techniques"},
+  {id:7,  icon:"meter",         label:"Étape 1 · Compteur"},
+  {id:8,  icon:"gauge",         label:"Étape 2 · Pression"},
+  {id:9,  icon:"drip",          label:"Étape 3 · Infiltration"},
+  {id:10, icon:"pipe_target",   label:"Étape 4 · Origine"},
+  {id:11, icon:"doc_check",     label:"Conclusion"},
+  {id:12, icon:"checklist",     label:"Recommandations"},
 ];
 const STEP_ICONS=["meter","gauge","drip","pipe_target"];
 
@@ -2188,7 +2187,7 @@ export default function App() {
 
 function SectionRouter({section,report,editing,upd,updE,updSP}) {
   const p={report,editing,upd,updE,updSP};
-  const map=[<Sec0 {...p}/>,<SecTiers {...p}/>,<Sec1 {...p}/>,<Sec2 {...p}/>,<Sec3 {...p}/>,<SecAlim {...p}/>,<SecEvaluations {...p}/>,<Sec5 {...p}/>,<SecE {...p} ei={0}/>,<SecE {...p} ei={1}/>,<SecE {...p} ei={2}/>,<SecE {...p} ei={3}/>,<Sec10 {...p}/>,<Sec11 {...p}/>];
+  const map=[<Sec0 {...p}/>,<Sec1 {...p}/>,<Sec2 {...p}/>,<Sec3 {...p}/>,<SecAlim {...p}/>,<SecEvaluations {...p}/>,<Sec5 {...p}/>,<SecE {...p} ei={0}/>,<SecE {...p} ei={1}/>,<SecE {...p} ei={2}/>,<SecE {...p} ei={3}/>,<Sec10 {...p}/>,<Sec11 {...p}/>];
   return map[section]||null;
 }
 
@@ -2202,25 +2201,6 @@ function Sec0({report,editing,upd,updSP}) {
       <Card><div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="files" size={14} color="#64748b"/>Dossier</div><div className="grid grid-cols-2 gap-4"><F label="N° de dossier" field="id" placeholder="001/PTE/1025"/><F label="Date d'intervention" field="date" type="date"/></div><F label="Type de problème signalé" field="problemType" placeholder="Ex : Infiltrations d'eau au plafond…"/>{editing&&<div><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Statut</label><select value={report.status} onChange={e=>upd("status",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white">{["brouillon","en cours","finalisé"].map(s=><option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}</select></div>}</Card>
       <Card><div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="id_card" size={14} color="#64748b"/>Client sinistré</div><div className="grid grid-cols-3 gap-3 mb-3"><div><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Civilité</label>{editing?<select value={report.clientCivilite} onChange={e=>upd("clientCivilite",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white">{["M.","Mme","Dr","Pr"].map(c=><option key={c}>{c}</option>)}</select>:<div className="text-sm text-slate-700">{report.clientCivilite}</div>}</div><F label="Nom" field="clientNom" placeholder="DUPONT"/><F label="Prénom" field="clientPrenom" placeholder="Jean"/></div><div className="grid grid-cols-2 gap-3"><F label="Téléphone" field="clientPhone" type="tel" placeholder="77 XXX XX XX"/><F label="Email" field="clientEmail" type="email" placeholder="email@exemple.com"/></div></Card>
       <Card><div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="floor_plan" size={14} color="#64748b"/>Adresses</div><F label="Adresse du client" field="address" placeholder="28 rue 111, Dakar Point E"/><F label="Adresse d'intervention" field="interventionAddress" placeholder="Appartement C5, 28 rue 111…"/></Card>
-    </div></div>);
-}
-
-function SecTiers({report,editing,upd,updSP}) {
-  const F=({label,field,type="text",placeholder=""})=>(<div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">{label}</label>{editing?<input type={type} value={report[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/>:<div className="text-sm text-slate-700">{report[field]||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</div>}</div>);
-  return(<div><SH icon="id_card" title="Tiers responsables & Responsabilité civile" sub="Identification légale des parties et responsables de la sinistralité"/>
-    <div className="space-y-4">
-      <Card>
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="id_card" size={14} color="#64748b"/>Tiers responsable de la fuite</div>
-        {editing?<div><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de tiers</label><select value={report.tiersType} onChange={e=>upd("tiersType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="propriétaire">Propriétaire de l'immeuble</option><option value="copropriétaire">Copropriétaire (autre lot)</option><option value="locataire">Locataire</option><option value="tiers">Tiers (préciser)</option><option value="unknown">Responsabilité à déterminer</option></select></div><F label="Identité du tiers" field="tiersNom" placeholder="Nom, prénom ou entreprise"/><F label="Contact tiers" field="tiersContact" placeholder="Téléphone ou email"/><F label="Assurance du tiers" field="tiersAssurance" placeholder="Ex : AXA, Allianz, etc."/></div>:<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.tiersType||"Non spécifié"}</p><p className="text-sm text-slate-700 mb-2"><strong>Identité :</strong> {report.tiersNom||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700 mb-2"><strong>Contact :</strong> {report.tiersContact||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700"><strong>Assurance :</strong> {report.tiersAssurance||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
-      </Card>
-      <Card>
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="id_card" size={14} color="#64748b"/>Demandeur d'intervention</div>
-        {editing?<div><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de demandeur</label><select value={report.demandeurType} onChange={e=>upd("demandeurType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="client">Client lui-même</option><option value="syndic">Syndic de copropriété</option><option value="assureur">Assureur</option><option value="expert">Expert judiciaire</option><option value="tiers">Autre (préciser)</option></select></div><F label="Identité du demandeur" field="demandeurNom" placeholder="Nom / Organisme"/><F label="Contact demandeur" field="demandeurContact" placeholder="Téléphone ou email"/></div>:<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.demandeurType||"Non spécifié"}</p><p className="text-sm text-slate-700 mb-2"><strong>Identité :</strong> {report.demandeurNom||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700"><strong>Contact :</strong> {report.demandeurContact||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
-      </Card>
-      <Card>
-        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="magnify" size={14} color="#64748b"/>Contexte historique</div>
-        {editing?<><F label="Date de première manifestation" field="dateFirstManif" type="date"/><VTA label="Interventions antérieures" value={report.interventionsAntérieures} onChange={v=>upd("interventionsAntérieures",v)} placeholder="Décrivez les interventions précédentes, réparations tentées…" rows={4}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Première manifestation :</strong> {report.dateFirstManif||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700 whitespace-pre-wrap"><strong>Interventions antérieures :</strong> {report.interventionsAntérieures||<span className="text-slate-300 italic text-xs">Aucune</span>}</p></>}
-      </Card>
     </div></div>);
 }
 
