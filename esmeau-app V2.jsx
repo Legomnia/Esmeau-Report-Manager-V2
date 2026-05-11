@@ -2366,7 +2366,7 @@ function Sec11({report,editing,upd,updSP}) {
         <div className="grid grid-cols-3 gap-3 mb-4">
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Urgence</label>
-            {editing?<select value={report.urgence||""} onChange={e=>upd("urgence",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="critique">🔴 Critique (< 24h)</option><option value="haute">🟠 Haute (< 1 sem)</option><option value="moyenne">🟡 Moyenne (< 1 mois)</option><option value="basse">🟢 Basse (≤ 3 mois)</option></select>:<p className="text-sm text-slate-700">{report.urgence||<span className="text-slate-300 italic text-xs">Non défini</span>}</p>}
+            {editing?<select value={report.urgence||""} onChange={e=>upd("urgence",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="critique">Critique (inf. a 24h)</option><option value="haute">Haute (inf. a 1 sem)</option><option value="moyenne">Moyenne (inf. a 1 mois)</option><option value="basse">Basse (inf. ou egal 3 mois)</option></select>:<p className="text-sm text-slate-700">{report.urgence||<span className="text-slate-300 italic text-xs">Non défini</span>}</p>}
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Responsabilité</label>
