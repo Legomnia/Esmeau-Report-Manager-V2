@@ -344,22 +344,24 @@ const INITIAL_REPORTS=[
   {id:"006/PTE/0526",date:"2026-05-28",clientCivilite:"M.",clientNom:"GUEYE",clientPrenom:"Ibrahima",clientPhone:"77 777 99 11",clientEmail:"",address:"Plateau, Dakar",interventionAddress:"Plateau, Dakar",problemType:"Surconsommation d'eau anormale",status:"brouillon",objet:"Client déclare une surconsommation importante d'eau.",constatations:"À vérifier.",batiment:"Maison R+2",degats:[],investigation:[],alimentationConfig:"",alimentationComposition:"",alimentationPointsAcces:"",alimentationNotes:"",moyens:{humidimetre:false,hygrometre:false,manometre:false,endoscope:false,cameraTher_visu:false,cameraTher_reseau:false,ecouteElectro:false,miseEnEau:false,colorant:false},etapes:[{titre:"Vérification compteur",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"Pression réseau intérieur",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"État de l'infiltration",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"Origine de la fuite",methodologie:"",resultat:"",conclusion:"",photos:[]}],conclusion:"",recommandations:"",sectionPhotos:defSP()},
 ];
 
-const newReport=()=>({id:`${String(Math.floor(Math.random()*900)+100).padStart(3,"0")}/PTE/${new Date().getFullYear().toString().slice(2)}${String(new Date().getMonth()+1).padStart(2,"0")}`,date:new Date().toISOString().split("T")[0],clientCivilite:"M.",clientNom:"",clientPrenom:"",clientPhone:"",clientEmail:"",address:"",interventionAddress:"",problemType:"",status:"brouillon",objet:"",constatations:"",batiment:"",degats:[{nature:"",niveau:"",occupant:""}],investigation:[{nature:"",niveau:"",occupant:""}],alimentationConfig:"",alimentationComposition:"",alimentationPointsAcces:"",alimentationNotes:"",moyens:{humidimetre:false,hygrometre:false,manometre:false,endoscope:false,cameraTher_visu:false,cameraTher_reseau:false,ecouteElectro:false,miseEnEau:false,colorant:false},etapes:[{titre:"Vérification compteur",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"Pression réseau intérieur",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"État de l'infiltration",methodologie:"",resultat:"",conclusion:"",photos:[]},{titre:"Origine de la fuite",methodologie:"",resultat:"",conclusion:"",photos:[]}],conclusion:"",recommandations:"",sectionPhotos:defSP()});
+const newReport=()=>({id:`${String(Math.floor(Math.random()*900)+100).padStart(3,"0")}/PTE/${new Date().getFullYear().toString().slice(2)}${String(new Date().getMonth()+1).padStart(2,"0")}`,date:new Date().toISOString().split("T")[0],clientCivilite:"M.",clientNom:"",clientPrenom:"",clientPhone:"",clientEmail:"",address:"",interventionAddress:"",problemType:"",status:"brouillon",tiersType:"",tiersNom:"",tiersContact:"",tiersAssurance:"",demandeurType:"",demandeurNom:"",demandeurContact:"",dateFirstManif:"",interventionsAntérieures:"",objet:"",constatations:"",surfaceAffectee:"",signesAlerte:"",batiment:"",degats:[{nature:"",niveau:"",occupant:""}],investigation:[{nature:"",niveau:"",occupant:""}],alimentationConfig:"",alimentationComposition:"",alimentationPointsAcces:"",alimentationNotes:"",alimentationECS:"",alimentationECSType:"",alimentationChauffage:"",alimentationChauffageType:"",alimentationEvacuations:"",alimentationEvacuationsNotes:"",alimentationIsolation:"",moyens:{humidimetre:false,hygrometre:false,manometre:false,endoscope:false,cameraTher_visu:false,cameraTher_reseau:false,ecouteElectro:false,miseEnEau:false,colorant:false,fumigene:false,testPression:false,detecteurCourant:false},etapes:[{titre:"Vérification compteur",methodologie:"",resultat:"",conclusion:"",seuilNormal:"",notes:"",photos:[]},{titre:"Pression réseau intérieur",methodologie:"",resultat:"",conclusion:"",seuilNormal:"2-3 bar",notes:"",photos:[]},{titre:"État de l'infiltration",methodologie:"",resultat:"",conclusion:"",seuilHumidite:"",notes:"",photos:[]},{titre:"Origine de la fuite",methodologie:"",resultat:"",conclusion:"",notes:"",photos:[]}],conclusion:"",recommandations:"",riskResiduel:"",urgence:"",responsabiliteExecution:"",sectionPhotos:defSP()});
 
-/* ─── SECTIONS — 12 with specific icons ─── */
+/* ─── SECTIONS — 15 with specific icons ─── */
 const SECTIONS=[
   {id:0,  icon:"id_card",       label:"Informations générales"},
-  {id:1,  icon:"clipboard_drop",label:"Objet de l'intervention"},
-  {id:2,  icon:"magnify",       label:"Constatations sur place"},
-  {id:3,  icon:"floor_plan",    label:"Configuration des lieux"},
-  {id:4,  icon:"pipe_net",      label:"Alimentation eau potable"},
-  {id:5,  icon:"toolbox",       label:"Moyens techniques"},
-  {id:6,  icon:"meter",         label:"Étape 1 · Compteur"},
-  {id:7,  icon:"gauge",         label:"Étape 2 · Pression"},
-  {id:8,  icon:"drip",          label:"Étape 3 · Infiltration"},
-  {id:9,  icon:"pipe_target",   label:"Étape 4 · Origine"},
-  {id:10, icon:"doc_check",     label:"Conclusion"},
-  {id:11, icon:"checklist",     label:"Recommandations"},
+  {id:1,  icon:"id_card",       label:"Tiers responsables"},
+  {id:2,  icon:"clipboard_drop",label:"Objet de l'intervention"},
+  {id:3,  icon:"magnify",       label:"Constatations sur place"},
+  {id:4,  icon:"floor_plan",    label:"Configuration des lieux"},
+  {id:5,  icon:"pipe_net",      label:"Alimentation eau potable"},
+  {id:6,  icon:"pipe_net",      label:"Évacuations & ECS/Chauffage"},
+  {id:7,  icon:"toolbox",       label:"Moyens techniques"},
+  {id:8,  icon:"meter",         label:"Étape 1 · Compteur"},
+  {id:9,  icon:"gauge",         label:"Étape 2 · Pression"},
+  {id:10, icon:"drip",          label:"Étape 3 · Infiltration"},
+  {id:11, icon:"pipe_target",   label:"Étape 4 · Origine"},
+  {id:12, icon:"doc_check",     label:"Conclusion"},
+  {id:13, icon:"checklist",     label:"Recommandations"},
 ];
 const STEP_ICONS=["meter","gauge","drip","pipe_target"];
 
@@ -2186,7 +2188,7 @@ export default function App() {
 
 function SectionRouter({section,report,editing,upd,updE,updSP}) {
   const p={report,editing,upd,updE,updSP};
-  const map=[<Sec0 {...p}/>,<Sec1 {...p}/>,<Sec2 {...p}/>,<Sec3 {...p}/>,<SecAlim {...p}/>,<Sec5 {...p}/>,<SecE {...p} ei={0}/>,<SecE {...p} ei={1}/>,<SecE {...p} ei={2}/>,<SecE {...p} ei={3}/>,<Sec10 {...p}/>,<Sec11 {...p}/>];
+  const map=[<Sec0 {...p}/>,<SecTiers {...p}/>,<Sec1 {...p}/>,<Sec2 {...p}/>,<Sec3 {...p}/>,<SecAlim {...p}/>,<SecEvaluations {...p}/>,<Sec5 {...p}/>,<SecE {...p} ei={0}/>,<SecE {...p} ei={1}/>,<SecE {...p} ei={2}/>,<SecE {...p} ei={3}/>,<Sec10 {...p}/>,<Sec11 {...p}/>];
   return map[section]||null;
 }
 
@@ -2203,9 +2205,28 @@ function Sec0({report,editing,upd,updSP}) {
     </div></div>);
 }
 
+function SecTiers({report,editing,upd,updSP}) {
+  const F=({label,field,type="text",placeholder=""})=>(<div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">{label}</label>{editing?<input type={type} value={report[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/>:<div className="text-sm text-slate-700">{report[field]||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</div>}</div>);
+  return(<div><SH icon="id_card" title="Tiers responsables & Responsabilité civile" sub="Identification légale des parties et responsables de la sinistralité"/>
+    <div className="space-y-4">
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="id_card" size={14} color="#64748b"/>Tiers responsable de la fuite</div>
+        {editing?<div><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de tiers</label><select value={report.tiersType} onChange={e=>upd("tiersType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="propriétaire">Propriétaire de l'immeuble</option><option value="copropriétaire">Copropriétaire (autre lot)</option><option value="locataire">Locataire</option><option value="tiers">Tiers (préciser)</option><option value="unknown">Responsabilité à déterminer</option></select></div><F label="Identité du tiers" field="tiersNom" placeholder="Nom, prénom ou entreprise"/><F label="Contact tiers" field="tiersContact" placeholder="Téléphone ou email"/><F label="Assurance du tiers" field="tiersAssurance" placeholder="Ex : AXA, Allianz, etc."/></div>:<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.tiersType||"Non spécifié"}</p><p className="text-sm text-slate-700 mb-2"><strong>Identité :</strong> {report.tiersNom||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700 mb-2"><strong>Contact :</strong> {report.tiersContact||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700"><strong>Assurance :</strong> {report.tiersAssurance||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+      </Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="id_card" size={14} color="#64748b"/>Demandeur d'intervention</div>
+        {editing?<div><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de demandeur</label><select value={report.demandeurType} onChange={e=>upd("demandeurType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="client">Client lui-même</option><option value="syndic">Syndic de copropriété</option><option value="assureur">Assureur</option><option value="expert">Expert judiciaire</option><option value="tiers">Autre (préciser)</option></select></div><F label="Identité du demandeur" field="demandeurNom" placeholder="Nom / Organisme"/><F label="Contact demandeur" field="demandeurContact" placeholder="Téléphone ou email"/></div>:<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.demandeurType||"Non spécifié"}</p><p className="text-sm text-slate-700 mb-2"><strong>Identité :</strong> {report.demandeurNom||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700"><strong>Contact :</strong> {report.demandeurContact||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+      </Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="magnify" size={14} color="#64748b"/>Contexte historique</div>
+        {editing?<><F label="Date de première manifestation" field="dateFirstManif" type="date"/><VTA label="Interventions antérieures" value={report.interventionsAntérieures} onChange={v=>upd("interventionsAntérieures",v)} placeholder="Décrivez les interventions précédentes, réparations tentées…" rows={4}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Première manifestation :</strong> {report.dateFirstManif||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p><p className="text-sm text-slate-700 whitespace-pre-wrap"><strong>Interventions antérieures :</strong> {report.interventionsAntérieures||<span className="text-slate-300 italic text-xs">Aucune</span>}</p></>}
+      </Card>
+    </div></div>);
+}
+
 function Sec1({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  return <div><SH icon="clipboard_drop" title="Objet de l'intervention" sub="Description du problème signalé par le client"/><div className="space-y-4"><Card><PhotoSection photos={sp.objet} onChange={p=>updSP("objet",p)} label="Photos du problème signalé"/></Card><Card>{editing?<VTA label="Description" value={report.objet} onChange={v=>upd("objet",v)} placeholder="Décrivez pourquoi le client a sollicité ESMEAU…" rows={7}/>:<p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{report.objet||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}</Card></div></div>;
+  return <div><SH icon="clipboard_drop" title="Objet de l'intervention" sub="Description du problème signalé par le client & Historique"/><div className="space-y-4"><Card><PhotoSection photos={sp.objet} onChange={p=>updSP("objet",p)} label="Photos du problème signalé"/></Card><Card><VTA label="Objet principal" value={report.objet} onChange={v=>upd("objet",v)} placeholder="Décrivez pourquoi le client a sollicité ESMEAU…" rows={5}/></Card></div></div>;
 }
 
 function Sec2({report,editing,upd,updSP}) {
@@ -2254,10 +2275,37 @@ function SecAlim({report,editing,upd,updSP}) {
     </div></div>);
 }
 
+function SecEvaluations({report,editing,upd,updSP}) {
+  const sp=report.sectionPhotos||defSP();
+  const F=({label,field,type="text",placeholder=""})=>(<div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">{label}</label>{editing?<input type={type} value={report[field]||""} onChange={e=>upd(field,e.target.value)} placeholder={placeholder} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/>:<div className="text-sm text-slate-700 whitespace-pre-wrap">{report[field]||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</div>}</div>);
+  return(<div><SH icon="pipe_net" title="Évacuations, ECS & Chauffage" sub="Réseaux d'évacuation, eau chaude sanitaire et circuits de chauffage"/>
+    <div className="space-y-4">
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Eau chaude sanitaire (ECS)</div>
+        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type d'ECS</label><select value={report.alimentationECSType} onChange={e=>upd("alimentationECSType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucune --</option><option value="accumulateur">Accumulateur</option><option value="instantané">Chauffe-eau instantané</option><option value="ballon">Ballon électrique</option><option value="thermodynamique">Chauffe-eau thermodynamique</option><option value="solaire">Panneaux solaires</option></select></div><VTA label="Configuration ECS" value={report.alimentationECS} onChange={v=>upd("alimentationECS",v)} placeholder="Localisation, tuyauterie, isolation, état général…" rows={3}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationECSType||"Aucune ECS"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationECS||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+      </Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Chauffage & Radiateurs</div>
+        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de chauffage</label><select value={report.alimentationChauffageType} onChange={e=>upd("alimentationChauffageType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucun --</option><option value="gaz">Chaudière gaz</option><option value="électrique">Radiateurs électriques</option><option value="pompe-chaleur">Pompe à chaleur</option><option value="radiateurs-eau">Radiateurs eau chaude</option><option value="plancher-chauffant">Plancher chauffant</option></select></div><VTA label="Configuration chauffage" value={report.alimentationChauffage} onChange={v=>upd("alimentationChauffage",v)} placeholder="Localisation, tuyauterie, vannes thermostatiques, état…" rows={3}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationChauffageType||"Aucun chauffage"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationChauffage||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+      </Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Réseaux d'évacuation</div>
+        {editing?<VTA label="Évacuations (eaux usées, condensats)" value={report.alimentationEvacuations} onChange={v=>upd("alimentationEvacuations",v)} placeholder="Localisation WC, douche, cuisine. État des tuyauteries, joints, pentes…" rows={4}/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationEvacuations||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+      </Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="magnify" size={14} color="#64748b"/>Isolation & Protection</div>
+        {editing?<VTA label="Tuyauteries visibles/encastrées & Isolation" value={report.alimentationIsolation} onChange={v=>upd("alimentationIsolation",v)} placeholder="État corrosion, érosion, calorifugeage, gaines de protection…" rows={3}/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationIsolation||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+      </Card>
+      <Card>
+        <PhotoSection photos={sp.alimentation} onChange={p=>updSP("alimentation",p)} label="Photos des circuits secondaires (ECS, chauffage, évacuations)"/>
+      </Card>
+    </div></div>);
+}
+
 function Sec5({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
   const tog=f=>upd("moyens",{...report.moyens,[f]:!report.moyens[f]});
-  const groups=[{label:"Mesures d'humidité",icon:"drip",items:[{f:"humidimetre",l:"Humidimètre"},{f:"hygrometre",l:"Hygromètre"}]},{label:"Tests de réseaux",icon:"gauge",items:[{f:"manometre",l:"Manomètre Digital"}]},{label:"Visualisation",icon:"magnify",items:[{f:"endoscope",l:"Endoscope à fibre optique"},{f:"cameraTher_visu",l:"Caméra Thermique"}]},{label:"Recherche de réseaux",icon:"eye",items:[{f:"ecouteElectro",l:"Écoute électroacoustique"},{f:"cameraTher_reseau",l:"Caméra Thermique"}]},{label:"Test d'étanchéité",icon:"sealed",items:[{f:"miseEnEau",l:"Mise en eau"},{f:"colorant",l:"Colorant"}]}];
+  const groups=[{label:"Mesures d'humidité",icon:"drip",items:[{f:"humidimetre",l:"Humidimètre"},{f:"hygrometre",l:"Hygromètre"}]},{label:"Tests de réseaux",icon:"gauge",items:[{f:"manometre",l:"Manomètre Digital"},{f:"testPression",l:"Test pression régulée"}]},{label:"Visualisation",icon:"magnify",items:[{f:"endoscope",l:"Endoscope à fibre optique"},{f:"cameraTher_visu",l:"Caméra Thermique (visualisation)"}]},{label:"Recherche de réseaux",icon:"eye",items:[{f:"ecouteElectro",l:"Écoute électroacoustique"},{f:"cameraTher_reseau",l:"Caméra Thermique (réseaux)"},{f:"detecteurCourant",l:"Détecteur de courant"}]},{label:"Test d'étanchéité & infiltration",icon:"sealed",items:[{f:"miseEnEau",l:"Mise en eau"},{f:"colorant",l:"Colorant"},{f:"fumigene",l:"Fumigène (dépistage fuites air)"}]}];
   return(<div><SH icon="toolbox" title="Moyens techniques utilisés" sub="Équipements et méthodes mis en œuvre lors de l'intervention"/>
     <div className="space-y-4"><Card><PhotoSection photos={sp.moyens} onChange={p=>updSP("moyens",p)} label="Photos des équipements utilisés"/></Card>
     <div className="grid grid-cols-1 gap-4" style={{gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))"}}>
@@ -2269,30 +2317,72 @@ function Sec5({report,editing,upd,updSP}) {
 function SecE({report,editing,updE,ei}) {
   const etape=report.etapes[ei];if(!etape)return null;
   const stepBg=["from-blue-50 to-sky-50 border-blue-200","from-sky-50 to-cyan-50 border-sky-200","from-cyan-50 to-blue-50 border-cyan-200","from-blue-50 to-indigo-50 border-indigo-200"];
-  return(<div><SH icon={STEP_ICONS[ei]} title={`Étape ${ei+1} : ${etape.titre}`} sub="Photos, méthodologie, résultats et conclusion"/>
+  const stepHints=[
+    {label:"Seuil normal",placeholder:"Ex : compteur fixe = aucune fuite"},
+    {label:"Seuil normal",placeholder:"Pression normale : 2-3 bar. Chute acceptable < 0,1 bar/5min"},
+    {label:"Seuil humidité",placeholder:"HR ambiant < 60%. Humidité murs < 20% (bois) ou < 4% (béton)"},
+    {label:"Notes complémentaires",placeholder:"Localisation précise, signes visuels…"}
+  ];
+  const hint=stepHints[ei];
+  return(<div><SH icon={STEP_ICONS[ei]} title={`Étape ${ei+1} : ${etape.titre}`} sub="Photos, méthodologie, résultats, seuils et conclusion"/>
     <div className="space-y-4">
       <div className={`rounded-2xl border-2 bg-gradient-to-br p-5 ${stepBg[ei]}`}>
         <PhotoSection photos={etape.photos||[]} onChange={photos=>updE(ei,"photos",photos)} label={`Photos — Étape ${ei+1} : ${etape.titre}`}/>
       </div>
-      <Card>{editing?(<><VTA label="Méthodologie" value={etape.methodologie} onChange={v=>updE(ei,"methodologie",v)} placeholder="Décrivez la méthode utilisée pour cette étape…" rows={4}/><VTA label="Résultat" value={etape.resultat} onChange={v=>updE(ei,"resultat",v)} placeholder="Décrivez les résultats obtenus (mesures, observations)…" rows={4}/><VTA label="→ Conclusion" value={etape.conclusion} onChange={v=>updE(ei,"conclusion",v)} placeholder="Concluez sur cette étape…" rows={3}/></>):(<div className="space-y-5">{[{l:"Méthodologie",v:etape.methodologie,ico:"wrench"},{l:"Résultat",v:etape.resultat,ico:STEP_ICONS[ei]}].map(f=>(<div key={f.l}><div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5"><WI name={f.ico} size={12} color="#94a3b8"/>{f.l}</div><p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{f.v||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>))}{etape.conclusion&&<div className="bg-sky-50 border border-sky-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 uppercase tracking-wide mb-1"><WI name="doc_check" size={12} color="#0284c7"/>→ Conclusion</div><p className="text-sm text-sky-900 leading-relaxed">{etape.conclusion}</p></div>}</div>)}</Card>
+      <Card>{editing?(<><VTA label="Méthodologie" value={etape.methodologie} onChange={v=>updE(ei,"methodologie",v)} placeholder="Décrivez la méthode utilisée pour cette étape…" rows={4}/><VTA label="Résultat" value={etape.resultat} onChange={v=>updE(ei,"resultat",v)} placeholder="Décrivez les résultats obtenus (mesures, observations, chiffres)…" rows={4}/><div className="mb-4"><label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block mb-1.5">{hint.label}</label><input type="text" value={etape.seuilNormal||""} onChange={e=>updE(ei,"seuilNormal",e.target.value)} placeholder={hint.placeholder} className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/></div><VTA label="Notes complémentaires" value={etape.notes} onChange={v=>updE(ei,"notes",v)} placeholder="Observations additionnelles, contexte…" rows={2}/><VTA label="→ Conclusion" value={etape.conclusion} onChange={v=>updE(ei,"conclusion",v)} placeholder="Concluez sur cette étape…" rows={3}/></>):(<div className="space-y-5">{[{l:"Méthodologie",v:etape.methodologie,ico:"wrench"},{l:"Résultat",v:etape.resultat,ico:STEP_ICONS[ei]}].map(f=>(<div key={f.l}><div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5"><WI name={f.ico} size={12} color="#94a3b8"/>{f.l}</div><p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{f.v||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>))}{etape.seuilNormal&&<div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-yellow-700 uppercase tracking-wide mb-1"><WI name="gauge" size={12} color="#ca8a04"/>Seuil/Norme</div><p className="text-sm text-yellow-900">{etape.seuilNormal}</p></div>}{etape.notes&&<div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Notes</p><p className="text-sm text-slate-700">{etape.notes}</p></div>}{etape.conclusion&&<div className="bg-sky-50 border border-sky-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 uppercase tracking-wide mb-1"><WI name="doc_check" size={12} color="#0284c7"/>→ Conclusion</div><p className="text-sm text-sky-900 leading-relaxed">{etape.conclusion}</p></div>}</div>)}</Card>
     </div></div>);
 }
 
 function Sec10({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  return <div><SH icon="doc_check" title="Conclusion de l'intervention" sub="Synthèse des investigations menées"/><div className="space-y-4"><Card><PhotoSection photos={sp.conclusion} onChange={p=>updSP("conclusion",p)} label="Photos illustrant la conclusion"/></Card><Card>{editing?<VTA label="Conclusion générale" value={report.conclusion} onChange={v=>upd("conclusion",v)} placeholder="Rédigez la conclusion : origine de la fuite, état du réseau…" rows={8}/>:<div className="bg-blue-50 rounded-xl p-4"><p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{report.conclusion||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>}</Card></div></div>;
+  return <div><SH icon="doc_check" title="Conclusion de l'intervention" sub="Synthèse : origine certifiée, responsabilité et risques résiduels"/>
+    <div className="space-y-4">
+      <Card><PhotoSection photos={sp.conclusion} onChange={p=>updSP("conclusion",p)} label="Photos illustrant la conclusion"/></Card>
+      <Card>
+        <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="doc_check" size={14} color="#64748b"/>Conclusion générale</div>
+        {editing?<VTA label="Conclusion" value={report.conclusion} onChange={v=>upd("conclusion",v)} placeholder="1. Origine certifiée de la fuite (où exactement ?)&#10;2. Responsabilité (qui doit réparer ?)&#10;3. Délai d'intervention recommandé&#10;4. Risques structuraux immédiat ?" rows={8}/>:<div className="bg-blue-50 rounded-xl p-4"><p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{report.conclusion||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>}
+      </Card>
+      <Card>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Risques résiduels</label>
+            {editing?<textarea value={report.riskResiduel||""} onChange={e=>upd("riskResiduel",e.target.value)} placeholder="Ex : Risque d'extension si non réparé. Dégâts structuraux possibles…" rows={3} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sky-400"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.riskResiduel||<span className="text-slate-300 italic text-xs">Aucun</span>}</p>}
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Assurabilité</label>
+            {editing?<textarea value={report.assurabilite||""} onChange={e=>upd("assurabilite",e.target.value)} placeholder="Ex : Dégâts couverts par assurance responsabilité civile…" rows={3} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sky-400"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.assurabilite||<span className="text-slate-300 italic text-xs">À déterminer</span>}</p>}
+          </div>
+        </div>
+      </Card>
+    </div></div>;
 }
 
 function Sec11({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  return(<div><SH icon="checklist" title="Recommandations" sub="Actions préconisées pour résoudre la problématique"/>
+  return(<div><SH icon="checklist" title="Recommandations" sub="Actions préconisées avec hiérarchie, urgence et responsabilité"/>
     <div className="space-y-4">
       <Card><PhotoSection photos={sp.recommandations} onChange={p=>updSP("recommandations",p)} label="Photos des travaux préconisés"/></Card>
       <Card>
-        {editing?<VTA label="Recommandations (une par ligne)" value={report.recommandations} onChange={v=>upd("recommandations",v)} placeholder="1. Ouvrir le faux-plafond…&#10;2. Remplacer la conduite…" rows={10}/>
-        :(<div className="space-y-2">{(report.recommandations||'').split('\n').filter(Boolean).map((line,i)=>(<div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl"><div className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center shrink-0 font-bold mt-0.5">{i+1}</div><p className="text-sm text-slate-700 leading-relaxed">{line.replace(/^\d+\.\s*/,"")}</p></div>))}{!report.recommandations&&<p className="text-slate-300 italic text-xs">Aucune recommandation</p>}</div>)}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Urgence</label>
+            {editing?<select value={report.urgence||""} onChange={e=>upd("urgence",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="critique">🔴 Critique (< 24h)</option><option value="haute">🟠 Haute (< 1 sem)</option><option value="moyenne">🟡 Moyenne (< 1 mois)</option><option value="basse">🟢 Basse (≤ 3 mois)</option></select>:<p className="text-sm text-slate-700">{report.urgence||<span className="text-slate-300 italic text-xs">Non défini</span>}</p>}
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Responsabilité</label>
+            {editing?<select value={report.responsabiliteExecution||""} onChange={e=>upd("responsabiliteExecution",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Sélectionner --</option><option value="propriétaire">Propriétaire du bien</option><option value="syndic">Syndic de copropriété</option><option value="copropriétaire-tiers">Copropriétaire (tiers)</option><option value="assurance">Assurance</option><option value="locataire">Locataire</option></select>:<p className="text-sm text-slate-700">{report.responsabiliteExecution||<span className="text-slate-300 italic text-xs">Non défini</span>}</p>}
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Délai max</label>
+            {editing?<input type="text" value={report.delaiMax||""} onChange={e=>upd("delaiMax",e.target.value)} placeholder="Ex : 7 jours" className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/>:<p className="text-sm text-slate-700">{report.delaiMax||<span className="text-slate-300 italic text-xs">Non défini</span>}</p>}
+          </div>
+        </div>
+      </Card>
+      <Card>
+        {editing?<VTA label="Recommandations (une par ligne, format: PRIORITÉ - Action)" value={report.recommandations} onChange={v=>upd("recommandations",v)} placeholder="URGENT - Arrêter les fuites condensats C6&#10;ESSENTIEL - Remplacer la conduite d'évacuation&#10;SOUHAITABLE - Vérifier la pente interne" rows={10}/>
+        :(<div className="space-y-2">{(report.recommandations||'').split('\n').filter(Boolean).map((line,i)=>(<div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl"><div className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center shrink-0 font-bold mt-0.5">{i+1}</div><p className="text-sm text-slate-700 leading-relaxed">{line.replace(/^(URGENT|ESSENTIEL|SOUHAITABLE|-)\s*/,"").replace(/^\d+\.\s*/,"")}</p></div>))}{!report.recommandations&&<p className="text-slate-300 italic text-xs">Aucune recommandation</p>}</div>)}
         <div className="mt-5 pt-4 border-t border-slate-100">
-          <p className="text-xs text-slate-400 italic leading-relaxed">Les recommandations formulées ci-dessus constituent des préconisations fournies par la société ESMEAU à titre informatif. Leur mise en œuvre relève exclusivement de la responsabilité du client.</p>
+          <p className="text-xs text-slate-400 italic leading-relaxed">Les recommandations formulées ci-dessus constituent des préconisations fournies par la société ESMEAU à titre informatif. Leur mise en œuvre relève exclusivement de la responsabilité du client ou de l'assurance compétente.</p>
           <p className="text-xs text-slate-300 mt-2">Ent. ESMEAU — RCCM : SN.DKR.2022.A.17941 — NINEA : 009436561 1Y1 | Non assujetti à la TVA (Régime CGU) - BRS à reverser à la DGID - Article 321 du CGI</p>
         </div>
       </Card>
