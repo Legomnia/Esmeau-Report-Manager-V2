@@ -6,9 +6,7 @@ import { improveText } from './ai.js';
 import { downloadReportPDF, getReportPDFBlob } from './pdfExport.js';
 import { uploadPDFToDrive, isDriveConfigured } from './googleDrive.js';
 
-// Supabase sera intégré ultérieurement - localStorage uniquement pour le moment
-const isSupabaseConfigured = () => false;
-const reportsAPI = { getAll: async () => null, create: async () => null, update: async () => null, delete: async () => null };
+import { isSupabaseConfigured, reportsAPI } from './supabaseReports.js';
 
 /* ═══════════════════════════════════════════════════════
    CONTEXTUAL SVG ICON SYSTEM  —  all 24×24, stroke-based
@@ -825,14 +823,23 @@ export default function App() {
 
   /* ─── LOCAL STORAGE PERSISTENCE ─── */
   useEffect(() => {
-    const saved = localStorage.getItem('esmeau_reports');
-    if (saved) {
-      try {
-        setReports(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to load reports from localStorage:', e);
+    const loadReports = async () => {
+      if (isSupabaseConfigured()) {
+        try {
+          const data = await reportsAPI.getAll();
+          setReports(data);
+          localStorage.setItem('esmeau_reports', JSON.stringify(data));
+          return;
+        } catch (e) {
+          console.error('Supabase load failed, using localStorage:', e);
+        }
       }
-    }
+      const saved = localStorage.getItem('esmeau_reports');
+      if (saved) {
+        try { setReports(JSON.parse(saved)); } catch (e) { console.error(e); }
+      }
+    };
+    loadReports();
   }, []);
 
   useEffect(() => {
@@ -906,10 +913,11 @@ export default function App() {
       return false;
     }
     setReports(prev=>{const i=prev.findIndex(r=>r.id===report.id);return i>=0?prev.map(r=>r.id===report.id?report:r):[report,...prev];});
+    if (isSupabaseConfigured()) reportsAPI.upsert(report).catch(e=>console.error('Supabase upsert error:',e));
     setView("dashboard");
     return true;
   }, [report]);
-  const del=useCallback(id=>{if(window.confirm("Supprimer ce rapport ?"))setReports(p=>p.filter(r=>r.id!==id));}, []);
+  const del=useCallback(id=>{if(window.confirm("Supprimer ce rapport ?")){setReports(p=>p.filter(r=>r.id!==id));if(isSupabaseConfigured())reportsAPI.delete(id).catch(e=>console.error('Supabase delete error:',e));}}, []);
   const upd=useCallback((f,v)=>setReport(p=>({...p,[f]:v})), []);
   const updE=useCallback((ei,f,v)=>setReport(p=>({...p,etapes:p.etapes.map((e,i)=>i===ei?{...e,[f]:v}:e)})), []);
   const updSP=useCallback((key,photos)=>setReport(p=>({...p,sectionPhotos:{...(p.sectionPhotos||defSP()),[key]:photos}})), []);
@@ -1195,11 +1203,7 @@ export default function App() {
       setView("form");
     };
     
-    const handleDelete = (id) => {
-      if(window.confirm("Supprimer ce rapport ?")) {
-        setReports(p=>p.filter(r=>r.id!==id));
-      }
-    };
+    const handleDelete = (id) => { del(id); };
     
     const handleShare = (r) => {
       setReport(r);
@@ -1805,12 +1809,8 @@ export default function App() {
                 <input type="text" placeholder="nvidia/nemotron-3-super-120b-a12b:free" value={settingsAIModel} onChange={(e) => setSettingsAIModel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
                 <p className="text-xs text-slate-500 mt-1">Liste complète sur openrouter.ai/models — les modèles ":free" sont gratuits</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Clé API OpenRouter</label>
-                <div className="relative">
-                  <input type="password" placeholder="sk-or-v1-..." value={settingsAIKey} onChange={(e) => setSettingsAIKey(e.target.value)} className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Disponible sur openrouter.ai/keys — stockée localement dans .env.local</p>
+              <div className="p-3 bg-sky-50 rounded-lg border border-sky-100">
+                <p className="text-xs text-sky-700"><strong>Clé API OpenRouter</strong> — configurée côté serveur (Supabase Secrets). Elle n'est jamais exposée dans le navigateur. Pour la modifier, rendez-vous dans le Dashboard Supabase → Edge Functions → Secrets → <code>OPENROUTER_API_KEY</code>.</p>
               </div>
               <div className="p-3 bg-violet-50 rounded-lg border border-violet-100">
                 <p className="text-xs text-violet-700">Le bouton <strong>✦ Améliorer</strong> apparaît sur chaque champ de texte du formulaire de rapport. Il reformule les notes brutes en texte technique professionnel selon les consignes définies dans <strong>prompts.js</strong>.</p>
@@ -1948,6 +1948,7 @@ export default function App() {
       };
 
       setReports(prev => [newReport, ...prev]);
+      if (isSupabaseConfigured()) reportsAPI.upsert(newReport).catch(e=>console.error('Supabase upsert error:',e));
       setPlanningModal(false);
       setPlanningDate("");
       setPlanningClient({ nom: "", prenom: "" });

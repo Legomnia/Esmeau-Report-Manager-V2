@@ -8,10 +8,14 @@ export async function improveText(fieldKey, rawText) {
 
   const fieldPrompt = FIELD_PROMPTS[fieldKey] ?? `Reformule ces notes en texte professionnel technique.`;
 
+  // Use the model saved in settings (if the user changed it), else fall back to prompts.js default
+  const savedSettings = JSON.parse(localStorage.getItem('esmeau_settings') ?? '{}');
+  const model = savedSettings.settingsAIModel || AI_MODEL;
+
   const { data, error } = await supabase.functions.invoke('improve-text', {
     body: {
       text: rawText,
-      model: AI_MODEL,
+      model,
       temperature: AI_TEMPERATURE,
       systemPrompt: SYSTEM_PROMPT,
       fieldPrompt,
