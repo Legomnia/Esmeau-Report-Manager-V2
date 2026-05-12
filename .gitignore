@@ -25,6 +25,9 @@ dist-ssr/
 # OS
 Thumbs.db
 
+# Vite cache
+.vite-cache/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

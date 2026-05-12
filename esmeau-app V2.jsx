@@ -1,7 +1,10 @@
 import React from "react";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createRoot } from 'react-dom/client';
-import { Plus, Search, Camera, Mic, MicOff, ArrowLeft, ArrowRight, Save, Edit, Eye, Trash2, CheckCircle, Clock, X, Check, Share2, Printer, Mail, Settings, FileText, CheckCircle2, PenTool, BarChart3, AlertCircle, MapPin, Calendar, LayoutGrid, CalendarDays } from "lucide-react";
+import { Plus, Search, Camera, Mic, MicOff, ArrowLeft, ArrowRight, Save, Edit, Eye, Trash2, CheckCircle, Clock, X, Check, Share2, Printer, Mail, Settings, FileText, CheckCircle2, PenTool, BarChart3, AlertCircle, MapPin, Calendar, LayoutGrid, CalendarDays, Wand2, Loader2, Download, HardDriveUpload } from "lucide-react";
+import { improveText } from './ai.js';
+import { downloadReportPDF, getReportPDFBlob } from './pdfExport.js';
+import { uploadPDFToDrive, isDriveConfigured } from './googleDrive.js';
 
 // Supabase sera intégré ultérieurement - localStorage uniquement pour le moment
 const isSupabaseConfigured = () => false;
@@ -370,10 +373,113 @@ const Logo=()=>(<img src="/images/logo.svg" alt="ESMEAU Logo" style={{width:"148
 /* ─── STATUS BADGE ─── */
 const StatusBadge=({status})=>{const cfg={brouillon:{cls:"bg-slate-100 text-slate-500",l:"Brouillon",i:<Clock size={11}/>},"en cours":{cls:"bg-sky-100 text-sky-700",l:"En cours",i:<Edit size={11}/>},finalisé:{cls:"bg-blue-800 text-white",l:"Finalisé",i:<CheckCircle size={11}/>}};const s=cfg[status]||cfg.brouillon;return <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${s.cls}`}>{s.i}{s.l}</span>;};
 
+/* ─── PDF + GOOGLE DRIVE BUTTONS ─── */
+function PDFDriveButtons({ report }) {
+  const [driveLoading, setDriveLoading] = useState(false);
+  const [driveSuccess, setDriveSuccess] = useState(null);
+  const [driveError, setDriveError] = useState(null);
+
+  const filename = `Rapport_${(report.id ?? 'esmeau').replace(/\//g, '-')}_${report.clientNom ?? 'client'}.pdf`;
+
+  const handleDownload = () => {
+    try { downloadReportPDF(report); } catch (e) { console.error(e); }
+  };
+
+  const handleDriveExport = async () => {
+    setDriveLoading(true);
+    setDriveError(null);
+    setDriveSuccess(null);
+    try {
+      const blob = getReportPDFBlob(report);
+      const file = await uploadPDFToDrive(blob, filename);
+      setDriveSuccess(file.url);
+    } catch (e) {
+      setDriveError(e.message);
+    } finally {
+      setDriveLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={handleDownload}
+        title="Télécharger le rapport en PDF"
+        className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition"
+      >
+        <Download size={13}/>PDF
+      </button>
+      {isDriveConfigured() && (
+        <div className="relative">
+          <button
+            onClick={handleDriveExport}
+            disabled={driveLoading}
+            title="Exporter vers Google Drive"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+              driveLoading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' :
+              driveSuccess ? 'bg-green-100 text-green-700 hover:bg-green-200' :
+              'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+            }`}
+          >
+            {driveLoading ? <Loader2 size={13} className="animate-spin"/> : <HardDriveUpload size={13}/>}
+            {driveSuccess ? 'Envoyé ✓' : driveLoading ? 'Envoi…' : 'Drive'}
+          </button>
+          {driveSuccess && (
+            <div className="absolute right-0 top-9 z-50 bg-white border border-green-200 rounded-xl shadow-lg p-3 w-64 text-xs">
+              <p className="text-green-700 font-semibold mb-1">Rapport sauvegardé dans Google Drive</p>
+              <a href={driveSuccess} target="_blank" rel="noreferrer" className="text-blue-600 underline break-all">Ouvrir dans Drive</a>
+            </div>
+          )}
+          {driveError && (
+            <div className="absolute right-0 top-9 z-50 bg-white border border-red-200 rounded-xl shadow-lg p-3 w-64 text-xs text-red-600">
+              {driveError}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── VOICE BUTTON ─── */
 const VoiceButton=({onTranscript})=>{const [rec,setRec]=useState(false);const ref=useRef(null);const toggle=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert("Reconnaissance vocale non disponible (Chrome recommandé).");return;}if(rec){ref.current?.stop();setRec(false);return;}const r=new SR();r.lang="fr-FR";r.continuous=false;r.interimResults=false;r.onstart=()=>setRec(true);r.onend=()=>setRec(false);r.onerror=()=>setRec(false);r.onresult=e=>onTranscript(e.results[0][0].transcript);ref.current=r;r.start();};return <button onClick={toggle} title="Dicter par reconnaissance vocale" className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${rec?"bg-red-50 text-red-600 border-red-200 animate-pulse":"bg-sky-50 text-sky-700 border-sky-200 hover:bg-sky-100"}`}>{rec?<MicOff size={12}/>:<Mic size={12}/>}{rec?"Arrêter":"Dicter"}</button>;};
 
-const VTA=({label,value,onChange,placeholder="",rows=3})=>{const [localValue,setLocalValue]=useState(value);const handleBlur=()=>onChange(localValue);useEffect(()=>setLocalValue(value),[value]);return(<div className="mb-4"><div className="flex items-center justify-between mb-1.5"><label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{label}</label><VoiceButton onTranscript={t=>{const newVal=localValue?(localValue+" "+t):t;setLocalValue(newVal);onChange(newVal);}}/></div><textarea value={localValue} onChange={e=>setLocalValue(e.target.value)} onBlur={handleBlur} placeholder={placeholder} rows={rows} className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none bg-white placeholder-slate-300"/></div>);};
+const VTA=({label,value,onChange,placeholder="",rows=3,fieldKey=""})=>{
+  const [localValue,setLocalValue]=useState(value);
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiError,setAiError]=useState("");
+  const handleBlur=()=>onChange(localValue);
+  useEffect(()=>setLocalValue(value),[value]);
+  const handleImprove=async()=>{
+    setAiError("");
+    setAiLoading(true);
+    try{
+      const improved=await improveText(fieldKey||label,localValue);
+      setLocalValue(improved);
+      onChange(improved);
+    }catch(e){
+      setAiError(e.message||"Erreur IA");
+    }finally{
+      setAiLoading(false);
+    }
+  };
+  return(
+    <div className="mb-4">
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{label}</label>
+        <div className="flex items-center gap-1.5">
+          <button onClick={handleImprove} disabled={aiLoading||!localValue?.trim()} title="Améliorer avec l'IA" className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${aiLoading?"bg-violet-50 text-violet-400 border-violet-200 cursor-not-allowed":"bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100 disabled:opacity-40 disabled:cursor-not-allowed"}`}>
+            {aiLoading?<Loader2 size={12} className="animate-spin"/>:<Wand2 size={12}/>}
+            {aiLoading?"IA…":"Améliorer"}
+          </button>
+          <VoiceButton onTranscript={t=>{const newVal=localValue?(localValue+" "+t):t;setLocalValue(newVal);onChange(newVal);}}/>
+        </div>
+      </div>
+      <textarea value={localValue} onChange={e=>{setLocalValue(e.target.value);setAiError("");}} onBlur={handleBlur} placeholder={placeholder} rows={rows} readOnly={aiLoading} className={`w-full border rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none bg-white placeholder-slate-300 transition-all ${aiLoading?"border-violet-200 bg-violet-50/30":"border-slate-200"}`}/>
+      {aiError&&<p className="mt-1 text-xs text-red-500 flex items-center gap-1"><AlertCircle size={11}/>{aiError}</p>}
+    </div>
+  );
+};
 
 /* ─── PHOTO SECTION ─── */
 const PhotoSection=({photos=[],onChange,label="Photos"})=>{
@@ -707,8 +813,8 @@ export default function App() {
   const [settingsEmailFrom, setSettingsEmailFrom] = useState("contact@esmeau.com");
   const [settingsEmailSignature, setSettingsEmailSignature] = useState("Cordialement,\nL'équipe ESMEAU");
   const [settingsAIEnabled, setSettingsAIEnabled] = useState(false);
-  const [settingsAIProvider, setSettingsAIProvider] = useState("claude");
-  const [settingsAIModel, setSettingsAIModel] = useState("claude-3.5-sonnet");
+  const [settingsAIProvider, setSettingsAIProvider] = useState("openrouter");
+  const [settingsAIModel, setSettingsAIModel] = useState("nvidia/nemotron-3-super-120b-a12b:free");
   const [settingsAIKey, setSettingsAIKey] = useState("");
   const [settingsAIAssistance_conclusions, setSettingsAIAssistance_conclusions] = useState(false);
   const [settingsAIAssistance_recommendations, setSettingsAIAssistance_recommendations] = useState(false);
@@ -1691,29 +1797,25 @@ export default function App() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Fournisseur API</label>
-                <select value={settingsAIProvider} onChange={(e) => setSettingsAIProvider(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400">
-                  <option value="claude">Anthropic Claude</option>
-                  <option value="openai">OpenAI</option>
-                </select>
+                <div className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 text-sm">OpenRouter</div>
+                <p className="text-xs text-slate-500 mt-1">Accès unifié à de nombreux modèles via openrouter.ai</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Modèle IA</label>
-                <input type="text" placeholder="claude-3.5-sonnet" value={settingsAIModel} onChange={(e) => setSettingsAIModel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-                <p className="text-xs text-slate-500 mt-1">Exemple: claude-3.5-sonnet ou gpt-4o</p>
+                <input type="text" placeholder="nvidia/nemotron-3-super-120b-a12b:free" value={settingsAIModel} onChange={(e) => setSettingsAIModel(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                <p className="text-xs text-slate-500 mt-1">Liste complète sur openrouter.ai/models — les modèles ":free" sont gratuits</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Clé API</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Clé API OpenRouter</label>
                 <div className="relative">
-                  <input type="password" placeholder="sk-..." value={settingsAIKey} onChange={(e) => setSettingsAIKey(e.target.value)} className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
+                  <input type="password" placeholder="sk-or-v1-..." value={settingsAIKey} onChange={(e) => setSettingsAIKey(e.target.value)} className="w-full px-3 py-2 pr-10 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
                 </div>
-                <p className="text-xs text-slate-500 mt-1">⚠️ Votre clé API reste confidentielle et stockée localement</p>
+                <p className="text-xs text-slate-500 mt-1">Disponible sur openrouter.ai/keys — stockée localement dans .env.local</p>
               </div>
-              <div className="space-y-3">
-                <Toggle value={settingsAIAssistance_conclusions} onChange={setSettingsAIAssistance_conclusions} label="Assistance rédaction conclusions" description="L'IA vous aide à rédiger les conclusions des rapports" />
-                <Toggle value={settingsAIAssistance_recommendations} onChange={setSettingsAIAssistance_recommendations} label="Assistance rédaction recommandations" description="L'IA suggère des recommandations basées sur les constats" />
-                <Toggle value={settingsAIAssistance_validation} onChange={setSettingsAIAssistance_validation} label="Vérification automatique" description="L'IA vérifie la cohérence du rapport" />
+              <div className="p-3 bg-violet-50 rounded-lg border border-violet-100">
+                <p className="text-xs text-violet-700">Le bouton <strong>✦ Améliorer</strong> apparaît sur chaque champ de texte du formulaire de rapport. Il reformule les notes brutes en texte technique professionnel selon les consignes définies dans <strong>prompts.js</strong>.</p>
               </div>
-              <Toggle value={settingsAIEnabled} onChange={setSettingsAIEnabled} label="Activer l'IA" description="Active toutes les fonctionnalités d'assistance IA" />
+              <Toggle value={settingsAIEnabled} onChange={setSettingsAIEnabled} label="Activer l'assistance IA" description="Affiche le bouton Améliorer sur tous les champs de texte du rapport" />
             </div>
           </Card>
 
@@ -2155,6 +2257,7 @@ export default function App() {
 
   /* ── FORM VIEW ── */
   if(!report)return null;
+
   const prog=Math.round((section/(SECTIONS.length-1))*100);
   return(
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -2165,6 +2268,7 @@ export default function App() {
         <div className="flex-1 min-w-0 ml-1"><div className="text-xs font-mono text-slate-400">{report.id}</div><div className="text-sm font-semibold text-slate-700 truncate">{report.clientCivilite} {report.clientNom||"Nouveau rapport"} {report.clientPrenom}</div></div>
         <StatusBadge status={report.status}/>
         <button onClick={()=>setShareOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-xl text-xs font-semibold hover:bg-blue-800 transition"><Share2 size={13}/>Partager</button>
+        <PDFDriveButtons report={report}/>
         {editing?<button onClick={save} className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-700 transition"><Save size={13}/>Enregistrer</button>:<button onClick={()=>setEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition"><Edit size={13}/>Modifier</button>}
       </header>
       <div className="h-1 bg-slate-100"><div className="h-full bg-gradient-to-r from-sky-400 to-blue-700 transition-all duration-500 rounded-full" style={{width:`${prog}%`}}/></div>
@@ -2210,12 +2314,12 @@ function Sec0({report,editing,upd,updSP}) {
 
 function Sec1({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  return <div><SH icon="clipboard_drop" title="Objet de l'intervention" sub="Description du problème signalé par le client & Historique"/><div className="space-y-4"><Card><PhotoSection photos={sp.objet} onChange={p=>updSP("objet",p)} label="Photos du problème signalé"/></Card><Card><VTA label="Objet principal" value={report.objet} onChange={v=>upd("objet",v)} placeholder="Décrivez pourquoi le client a sollicité ESMEAU…" rows={5}/></Card></div></div>;
+  return <div><SH icon="clipboard_drop" title="Objet de l'intervention" sub="Description du problème signalé par le client & Historique"/><div className="space-y-4"><Card><PhotoSection photos={sp.objet} onChange={p=>updSP("objet",p)} label="Photos du problème signalé"/></Card><Card><VTA label="Objet principal" value={report.objet} onChange={v=>upd("objet",v)} placeholder="Décrivez pourquoi le client a sollicité ESMEAU…" rows={5} fieldKey="objet"/></Card></div></div>;
 }
 
 function Sec2({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  return <div><SH icon="magnify" title="Constatations sur place" sub="Observations réalisées à l'arrivée sur site"/><div className="space-y-4"><Card><PhotoSection photos={sp.constatations} onChange={p=>updSP("constatations",p)} label="Photos des dommages constatés"/></Card><Card>{editing?<VTA label="Constatations" value={report.constatations} onChange={v=>upd("constatations",v)} placeholder="Décrivez ce qui a été observé à l'arrivée…" rows={7}/>:<p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{report.constatations||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}</Card></div></div>;
+  return <div><SH icon="magnify" title="Constatations sur place" sub="Observations réalisées à l'arrivée sur site"/><div className="space-y-4"><Card><PhotoSection photos={sp.constatations} onChange={p=>updSP("constatations",p)} label="Photos des dommages constatés"/></Card><Card>{editing?<VTA label="Constatations" value={report.constatations} onChange={v=>upd("constatations",v)} placeholder="Décrivez ce qui a été observé à l'arrivée…" rows={7} fieldKey="constatations"/>:<p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{report.constatations||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}</Card></div></div>;
 }
 
 /* ── SECTION TABLE – défini au niveau module pour éviter le démontage à chaque re-render ── */
@@ -2250,19 +2354,19 @@ function SecAlim({report,editing,upd,updSP}) {
       </div>
       <Card>
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100"><div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center"><WI name="pipe_net" size={17} color="#1d4ed8"/></div><div><div className="text-sm font-bold text-slate-700">Schéma d'alimentation</div><div className="text-xs text-slate-400">Chaîne complète (ex : Compteur → Suppresseur → Réservoirs → Distribution)</div></div></div>
-        {editing?<VTA label="Schéma général" value={report.alimentationConfig} onChange={v=>upd("alimentationConfig",v)} placeholder="Ex : Compteur Sen'Eau → Suppresseur → Réservoirs toiture (×2) → Nourrices par étage" rows={3}/>:<div className="bg-blue-50 rounded-xl p-3"><p className="text-sm text-blue-900 font-mono leading-relaxed">{report.alimentationConfig||<span className="text-slate-300 italic text-xs not-[font-mono]">Non renseigné</span>}</p></div>}
+        {editing?<VTA label="Schéma général" value={report.alimentationConfig} onChange={v=>upd("alimentationConfig",v)} placeholder="Ex : Compteur Sen'Eau → Suppresseur → Réservoirs toiture (×2) → Nourrices par étage" rows={3} fieldKey="alimentationConfig"/>:<div className="bg-blue-50 rounded-xl p-3"><p className="text-sm text-blue-900 font-mono leading-relaxed">{report.alimentationConfig||<span className="text-slate-300 italic text-xs not-[font-mono]">Non renseigné</span>}</p></div>}
       </Card>
       <Card>
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100"><div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center"><WI name="floor_plan" size={17} color="#0369a1"/></div><div><div className="text-sm font-bold text-slate-700">Composition de l'installation</div><div className="text-xs text-slate-400">Nombre de pièces, salles de bains, cuisines, niveaux…</div></div></div>
-        {editing?<VTA label="Composition" value={report.alimentationComposition} onChange={v=>upd("alimentationComposition",v)} placeholder="Ex : 6 chambres avec SDB, 2 cuisines, piscine à débordement" rows={3}/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationComposition||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+        {editing?<VTA label="Composition" value={report.alimentationComposition} onChange={v=>upd("alimentationComposition",v)} placeholder="Ex : 6 chambres avec SDB, 2 cuisines, piscine à débordement" rows={3} fieldKey="alimentationComposition"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationComposition||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
       </Card>
       <Card>
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100"><div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center"><WI name="valve" size={17} color="#0369a1"/></div><div><div className="text-sm font-bold text-slate-700">Points d'accès et vannes</div><div className="text-xs text-slate-400">Localisation du compteur, vannes d'arrêt, nourrices, suppresseur…</div></div></div>
-        {editing?<VTA label="Points d'accès" value={report.alimentationPointsAcces} onChange={v=>upd("alimentationPointsAcces",v)} placeholder="Ex : Compteur principal (extérieur). Vanne générale (local technique RDC). Suppresseur (sous-sol). Nourrice par étage en gaine technique." rows={4}/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationPointsAcces||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+        {editing?<VTA label="Points d'accès" value={report.alimentationPointsAcces} onChange={v=>upd("alimentationPointsAcces",v)} placeholder="Ex : Compteur principal (extérieur). Vanne générale (local technique RDC). Suppresseur (sous-sol). Nourrice par étage en gaine technique." rows={4} fieldKey="alimentationPointsAcces"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationPointsAcces||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
       </Card>
       <Card>
         <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100"><div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center"><WI name="magnify" size={17} color="#64748b"/></div><div><div className="text-sm font-bold text-slate-700">Observations complémentaires</div><div className="text-xs text-slate-400">Particularités, anomalies observées, état général…</div></div></div>
-        {editing?<VTA label="Observations" value={report.alimentationNotes} onChange={v=>upd("alimentationNotes",v)} placeholder="Ex : Conduites condensats entièrement encastrées. Absence de vanne sectorisée par appartement." rows={4}/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationNotes||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+        {editing?<VTA label="Observations" value={report.alimentationNotes} onChange={v=>upd("alimentationNotes",v)} placeholder="Ex : Conduites condensats entièrement encastrées. Absence de vanne sectorisée par appartement." rows={4} fieldKey="alimentationNotes"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationNotes||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
       </Card>
     </div></div>);
 }
@@ -2273,19 +2377,19 @@ function SecEvaluations({report,editing,upd,updSP}) {
     <div className="space-y-4">
       <Card>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Eau chaude sanitaire (ECS)</div>
-        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type d'ECS</label><select value={report.alimentationECSType} onChange={e=>upd("alimentationECSType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucune --</option><option value="accumulateur">Accumulateur</option><option value="instantané">Chauffe-eau instantané</option><option value="ballon">Ballon électrique</option><option value="thermodynamique">Chauffe-eau thermodynamique</option><option value="solaire">Panneaux solaires</option></select></div><VTA label="Configuration ECS" value={report.alimentationECS} onChange={v=>upd("alimentationECS",v)} placeholder="Localisation, tuyauterie, isolation, état général…" rows={3}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationECSType||"Aucune ECS"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationECS||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type d'ECS</label><select value={report.alimentationECSType} onChange={e=>upd("alimentationECSType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucune --</option><option value="accumulateur">Accumulateur</option><option value="instantané">Chauffe-eau instantané</option><option value="ballon">Ballon électrique</option><option value="thermodynamique">Chauffe-eau thermodynamique</option><option value="solaire">Panneaux solaires</option></select></div><VTA label="Configuration ECS" value={report.alimentationECS} onChange={v=>upd("alimentationECS",v)} placeholder="Localisation, tuyauterie, isolation, état général…" rows={3} fieldKey="alimentationECS"/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationECSType||"Aucune ECS"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationECS||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
       </Card>
       <Card>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Chauffage & Radiateurs</div>
-        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de chauffage</label><select value={report.alimentationChauffageType} onChange={e=>upd("alimentationChauffageType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucun --</option><option value="gaz">Chaudière gaz</option><option value="électrique">Radiateurs électriques</option><option value="pompe-chaleur">Pompe à chaleur</option><option value="radiateurs-eau">Radiateurs eau chaude</option><option value="plancher-chauffant">Plancher chauffant</option></select></div><VTA label="Configuration chauffage" value={report.alimentationChauffage} onChange={v=>upd("alimentationChauffage",v)} placeholder="Localisation, tuyauterie, vannes thermostatiques, état…" rows={3}/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationChauffageType||"Aucun chauffage"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationChauffage||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
+        {editing?<><div className="mb-3"><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Type de chauffage</label><select value={report.alimentationChauffageType} onChange={e=>upd("alimentationChauffageType",e.target.value)} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"><option value="">-- Aucun --</option><option value="gaz">Chaudière gaz</option><option value="électrique">Radiateurs électriques</option><option value="pompe-chaleur">Pompe à chaleur</option><option value="radiateurs-eau">Radiateurs eau chaude</option><option value="plancher-chauffant">Plancher chauffant</option></select></div><VTA label="Configuration chauffage" value={report.alimentationChauffage} onChange={v=>upd("alimentationChauffage",v)} placeholder="Localisation, tuyauterie, vannes thermostatiques, état…" rows={3} fieldKey="alimentationChauffage"/></> :<><p className="text-sm text-slate-700 mb-2"><strong>Type :</strong> {report.alimentationChauffageType||"Aucun chauffage"}</p><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationChauffage||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></>}
       </Card>
       <Card>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="pipe_net" size={14} color="#64748b"/>Réseaux d'évacuation</div>
-        {editing?<VTA label="Évacuations (eaux usées, condensats)" value={report.alimentationEvacuations} onChange={v=>upd("alimentationEvacuations",v)} placeholder="Localisation WC, douche, cuisine. État des tuyauteries, joints, pentes…" rows={4}/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationEvacuations||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+        {editing?<VTA label="Évacuations (eaux usées, condensats)" value={report.alimentationEvacuations} onChange={v=>upd("alimentationEvacuations",v)} placeholder="Localisation WC, douche, cuisine. État des tuyauteries, joints, pentes…" rows={4} fieldKey="alimentationEvacuations"/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationEvacuations||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
       </Card>
       <Card>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="magnify" size={14} color="#64748b"/>Isolation & Protection</div>
-        {editing?<VTA label="Tuyauteries visibles/encastrées & Isolation" value={report.alimentationIsolation} onChange={v=>upd("alimentationIsolation",v)} placeholder="État corrosion, érosion, calorifugeage, gaines de protection…" rows={3}/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationIsolation||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
+        {editing?<VTA label="Tuyauteries visibles/encastrées & Isolation" value={report.alimentationIsolation} onChange={v=>upd("alimentationIsolation",v)} placeholder="État corrosion, érosion, calorifugeage, gaines de protection…" rows={3} fieldKey="alimentationIsolation"/> :<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.alimentationIsolation||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p>}
       </Card>
       <Card>
         <PhotoSection photos={sp.alimentation} onChange={p=>updSP("alimentation",p)} label="Photos des circuits secondaires (ECS, chauffage, évacuations)"/>
@@ -2321,30 +2425,26 @@ function SecE({report,editing,updE,ei}) {
       <div className={`rounded-2xl border-2 bg-gradient-to-br p-5 ${stepBg[ei]}`}>
         <PhotoSection photos={etape.photos||[]} onChange={photos=>updE(ei,"photos",photos)} label={`Photos — Étape ${ei+1} : ${etape.titre}`}/>
       </div>
-      <Card>{editing?(<><VTA label="Méthodologie" value={etape.methodologie} onChange={v=>updE(ei,"methodologie",v)} placeholder="Décrivez la méthode utilisée pour cette étape…" rows={4}/><VTA label="Résultat" value={etape.resultat} onChange={v=>updE(ei,"resultat",v)} placeholder="Décrivez les résultats obtenus (mesures, observations, chiffres)…" rows={4}/><div className="mb-4"><label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block mb-1.5">{hint.label}</label><input type="text" value={localSeuil} onChange={e=>setLocalSeuil(e.target.value)} onBlur={e=>updE(ei,"seuilNormal",e.target.value)} placeholder={hint.placeholder} className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/></div><VTA label="Notes complémentaires" value={etape.notes} onChange={v=>updE(ei,"notes",v)} placeholder="Observations additionnelles, contexte…" rows={2}/><VTA label="→ Conclusion" value={etape.conclusion} onChange={v=>updE(ei,"conclusion",v)} placeholder="Concluez sur cette étape…" rows={3}/></>):(<div className="space-y-5">{[{l:"Méthodologie",v:etape.methodologie,ico:"wrench"},{l:"Résultat",v:etape.resultat,ico:STEP_ICONS[ei]}].map(f=>(<div key={f.l}><div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5"><WI name={f.ico} size={12} color="#94a3b8"/>{f.l}</div><p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{f.v||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>))}{etape.seuilNormal&&<div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-yellow-700 uppercase tracking-wide mb-1"><WI name="gauge" size={12} color="#ca8a04"/>Seuil/Norme</div><p className="text-sm text-yellow-900">{etape.seuilNormal}</p></div>}{etape.notes&&<div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Notes</p><p className="text-sm text-slate-700">{etape.notes}</p></div>}{etape.conclusion&&<div className="bg-sky-50 border border-sky-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 uppercase tracking-wide mb-1"><WI name="doc_check" size={12} color="#0284c7"/>→ Conclusion</div><p className="text-sm text-sky-900 leading-relaxed">{etape.conclusion}</p></div>}</div>)}</Card>
+      <Card>{editing?(<><VTA label="Méthodologie" value={etape.methodologie} onChange={v=>updE(ei,"methodologie",v)} placeholder="Décrivez la méthode utilisée pour cette étape…" rows={4} fieldKey="methodologie"/><VTA label="Résultat" value={etape.resultat} onChange={v=>updE(ei,"resultat",v)} placeholder="Décrivez les résultats obtenus (mesures, observations, chiffres)…" rows={4} fieldKey="resultat"/><div className="mb-4"><label className="text-xs font-semibold text-slate-600 uppercase tracking-wide block mb-1.5">{hint.label}</label><input type="text" value={localSeuil} onChange={e=>setLocalSeuil(e.target.value)} onBlur={e=>updE(ei,"seuilNormal",e.target.value)} placeholder={hint.placeholder} className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-400 bg-white"/></div><VTA label="Notes complémentaires" value={etape.notes} onChange={v=>updE(ei,"notes",v)} placeholder="Observations additionnelles, contexte…" rows={2} fieldKey="etapeNotes"/><VTA label="→ Conclusion" value={etape.conclusion} onChange={v=>updE(ei,"conclusion",v)} placeholder="Concluez sur cette étape…" rows={3} fieldKey="etapeConclusion"/></>):(<div className="space-y-5">{[{l:"Méthodologie",v:etape.methodologie,ico:"wrench"},{l:"Résultat",v:etape.resultat,ico:STEP_ICONS[ei]}].map(f=>(<div key={f.l}><div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5"><WI name={f.ico} size={12} color="#94a3b8"/>{f.l}</div><p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{f.v||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>))}{etape.seuilNormal&&<div className="bg-yellow-50 border border-yellow-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-yellow-700 uppercase tracking-wide mb-1"><WI name="gauge" size={12} color="#ca8a04"/>Seuil/Norme</div><p className="text-sm text-yellow-900">{etape.seuilNormal}</p></div>}{etape.notes&&<div className="bg-slate-50 rounded-xl p-3"><p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Notes</p><p className="text-sm text-slate-700">{etape.notes}</p></div>}{etape.conclusion&&<div className="bg-sky-50 border border-sky-100 rounded-xl p-3"><div className="flex items-center gap-1.5 text-xs font-bold text-sky-600 uppercase tracking-wide mb-1"><WI name="doc_check" size={12} color="#0284c7"/>→ Conclusion</div><p className="text-sm text-sky-900 leading-relaxed">{etape.conclusion}</p></div>}</div>)}</Card>
     </div></div>);
 }
 
 function Sec10({report,editing,upd,updSP}) {
   const sp=report.sectionPhotos||defSP();
-  const [localRisk,setLocalRisk]=useState(report.riskResiduel||"");
-  const [localAssur,setLocalAssur]=useState(report.assurabilite||"");
   return <div><SH icon="doc_check" title="Conclusion de l'intervention" sub="Synthèse : origine certifiée, responsabilité et risques résiduels"/>
     <div className="space-y-4">
       <Card><PhotoSection photos={sp.conclusion} onChange={p=>updSP("conclusion",p)} label="Photos illustrant la conclusion"/></Card>
       <Card>
         <div className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2"><WI name="doc_check" size={14} color="#64748b"/>Conclusion générale</div>
-        {editing?<VTA label="Conclusion" value={report.conclusion} onChange={v=>upd("conclusion",v)} placeholder="1. Origine certifiée de la fuite (où exactement ?)&#10;2. Responsabilité (qui doit réparer ?)&#10;3. Délai d'intervention recommandé&#10;4. Risques structuraux immédiat ?" rows={8}/>:<div className="bg-blue-50 rounded-xl p-4"><p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{report.conclusion||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>}
+        {editing?<VTA label="Conclusion" value={report.conclusion} onChange={v=>upd("conclusion",v)} placeholder="1. Origine certifiée de la fuite (où exactement ?)&#10;2. Responsabilité (qui doit réparer ?)&#10;3. Délai d'intervention recommandé&#10;4. Risques structuraux immédiat ?" rows={8} fieldKey="conclusion"/>:<div className="bg-blue-50 rounded-xl p-4"><p className="text-sm text-blue-900 leading-relaxed whitespace-pre-wrap">{report.conclusion||<span className="text-slate-300 italic text-xs">Non renseigné</span>}</p></div>}
       </Card>
       <Card>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Risques résiduels</label>
-            {editing?<textarea value={localRisk} onChange={e=>setLocalRisk(e.target.value)} onBlur={e=>upd("riskResiduel",e.target.value)} placeholder="Ex : Risque d'extension si non réparé. Dégâts structuraux possibles…" rows={3} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sky-400"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.riskResiduel||<span className="text-slate-300 italic text-xs">Aucun</span>}</p>}
+            {editing?<VTA label="Risques résiduels" value={report.riskResiduel} onChange={v=>upd("riskResiduel",v)} placeholder="Ex : Risque d'extension si non réparé. Dégâts structuraux possibles…" rows={3} fieldKey="riskResiduel"/>:<div><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Risques résiduels</label><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.riskResiduel||<span className="text-slate-300 italic text-xs">Aucun</span>}</p></div>}
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Assurabilité</label>
-            {editing?<textarea value={localAssur} onChange={e=>setLocalAssur(e.target.value)} onBlur={e=>upd("assurabilite",e.target.value)} placeholder="Ex : Dégâts couverts par assurance responsabilité civile…" rows={3} className="w-full border border-slate-200 rounded-xl p-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-sky-400"/>:<p className="text-sm text-slate-700 whitespace-pre-wrap">{report.assurabilite||<span className="text-slate-300 italic text-xs">À déterminer</span>}</p>}
+            {editing?<VTA label="Assurabilité" value={report.assurabilite} onChange={v=>upd("assurabilite",v)} placeholder="Ex : Dégâts couverts par assurance responsabilité civile…" rows={3} fieldKey="assurabilite"/>:<div><label className="text-xs font-semibold text-slate-500 uppercase tracking-wide block mb-1">Assurabilité</label><p className="text-sm text-slate-700 whitespace-pre-wrap">{report.assurabilite||<span className="text-slate-300 italic text-xs">À déterminer</span>}</p></div>}
           </div>
         </div>
       </Card>
@@ -2374,7 +2474,7 @@ function Sec11({report,editing,upd,updSP}) {
         </div>
       </Card>
       <Card>
-        {editing?<VTA label="Recommandations (une par ligne, format: PRIORITÉ - Action)" value={report.recommandations} onChange={v=>upd("recommandations",v)} placeholder="URGENT - Arrêter les fuites condensats C6&#10;ESSENTIEL - Remplacer la conduite d'évacuation&#10;SOUHAITABLE - Vérifier la pente interne" rows={10}/>
+        {editing?<VTA label="Recommandations (une par ligne, format: PRIORITÉ - Action)" value={report.recommandations} onChange={v=>upd("recommandations",v)} placeholder="URGENT - Arrêter les fuites condensats C6&#10;ESSENTIEL - Remplacer la conduite d'évacuation&#10;SOUHAITABLE - Vérifier la pente interne" rows={10} fieldKey="recommandations"/>
         :(<div className="space-y-2">{(report.recommandations||'').split('\n').filter(Boolean).map((line,i)=>(<div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl"><div className="w-6 h-6 rounded-full bg-blue-700 text-white text-xs flex items-center justify-center shrink-0 font-bold mt-0.5">{i+1}</div><p className="text-sm text-slate-700 leading-relaxed">{line.replace(/^(URGENT|ESSENTIEL|SOUHAITABLE|-)\s*/,"").replace(/^\d+\.\s*/,"")}</p></div>))}{!report.recommandations&&<p className="text-slate-300 italic text-xs">Aucune recommandation</p>}</div>)}
         <div className="mt-5 pt-4 border-t border-slate-100">
           <p className="text-xs text-slate-400 italic leading-relaxed">Les recommandations formulées ci-dessus constituent des préconisations fournies par la société ESMEAU à titre informatif. Leur mise en œuvre relève exclusivement de la responsabilité du client ou de l'assurance compétente.</p>
