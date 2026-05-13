@@ -783,6 +783,10 @@ const CalendarMonth = ({ year, month, reports, onDateClick }) => {
    ═══════════════════════════════════════════════════════ */
 export default function App() {
   const [view,setView]=useState("dashboard");const [reports,setReports]=useState(INITIAL_REPORTS);const [report,setReport]=useState(null);const [editing,setEditing]=useState(false);const [section,setSection]=useState(0);const [search,setSearch]=useState("");const [shareOpen,setShareOpen]=useState(false);
+  const [saveStatus,setSaveStatus]=useState('idle'); // 'idle'|'saving'|'saved'|'error'
+  const [lastSavedAt,setLastSavedAt]=useState(null);
+  const [draftNotice,setDraftNotice]=useState(null); // draft recovery notification
+  const draftTimerRef=useRef(null);
   
   // Hooks for reports view (must be at top level)
   const [searchTerm, setSearchTerm] = useState("");
@@ -821,16 +825,54 @@ export default function App() {
   const [settingsCompanyRCCM, setSettingsCompanyRCCM] = useState("SN.DKR.2022.A.17941");
   const [settingsCompanyNINEA, setSettingsCompanyNINEA] = useState("009436561 1Y1");
 
-  /* ─── LOCAL STORAGE PERSISTENCE ─── */
+  /* ─── PERSISTENCE ARCHITECTURE ───────────────────────────────────────
+     Layer 1: localStorage draft — crash-safe, written on every field change
+     Layer 2: Supabase — source of truth, auto-saved every 60s + on explicit save
+     Layer 3: localStorage list backup — used when Supabase is unavailable
+  ──────────────────────────────────────────────────────────────────── */
+
+  const writeDraft = useCallback((r) => {
+    if (!r?.id) return;
+    try {
+      localStorage.setItem(`esmeau_draft_${r.id}`, JSON.stringify({...r, _draftAt: Date.now()}));
+    } catch {
+      try {
+        // Quota: strip photos, keep all text
+        localStorage.setItem(`esmeau_draft_${r.id}`, JSON.stringify({...r, sectionPhotos:{}, _draftAt: Date.now()}));
+      } catch {}
+    }
+  }, []);
+
+  const clearDraft = useCallback((id) => {
+    localStorage.removeItem(`esmeau_draft_${id}`);
+  }, []);
+
+  // Load on mount: Supabase → localStorage fallback, then check for unsaved drafts
   useEffect(() => {
     const loadReports = async () => {
       if (isSupabaseConfigured()) {
         try {
           const data = await reportsAPI.getAll();
           setReports(data);
+          // Check for drafts newer than what Supabase returned (unsaved work)
+          const drafts = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key?.startsWith('esmeau_draft_')) continue;
+            try {
+              const draft = JSON.parse(localStorage.getItem(key));
+              if (!draft?._draftAt) continue;
+              const inDb = data.find(r => r.id === draft.id);
+              if (!inDb || draft._draftAt > new Date(inDb.date).getTime()) drafts.push(draft);
+            } catch {}
+          }
+          if (drafts.length > 0) {
+            drafts.sort((a, b) => b._draftAt - a._draftAt);
+            setDraftNotice(drafts[0]);
+          }
           return;
         } catch (e) {
-          console.error('Supabase load failed, using localStorage:', e);
+          console.error('Supabase load failed, falling back to localStorage:', e);
         }
       }
       const saved = localStorage.getItem('esmeau_reports');
@@ -841,30 +883,36 @@ export default function App() {
     loadReports();
   }, []);
 
+  // Without Supabase: persist full list to localStorage
   useEffect(() => {
     if (isSupabaseConfigured()) return;
-    const saveReports = () => {
-      try {
-        localStorage.setItem('esmeau_reports', JSON.stringify(reports));
-      } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-          // Strip photos from reports to reduce size, keep text data
-          const stripped = reports.map(r => ({
-            ...r,
-            photos: [],
-            sections: r.sections ? r.sections.map(s => ({ ...s, photos: [] })) : r.sections,
-          }));
-          try {
-            localStorage.setItem('esmeau_reports', JSON.stringify(stripped));
-            console.warn('localStorage quota exceeded: photos were not saved locally. Use Supabase for full persistence.');
-          } catch (e2) {
-            console.error('localStorage unavailable even after stripping photos:', e2);
-          }
-        }
+    try {
+      localStorage.setItem('esmeau_reports', JSON.stringify(reports));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        try {
+          localStorage.setItem('esmeau_reports', JSON.stringify(reports.map(r => ({...r, sectionPhotos:{}}))));
+        } catch {}
       }
-    };
-    saveReports();
+    }
   }, [reports]);
+
+  // Auto-save to Supabase every 60s while editing (silent background save)
+  useEffect(() => {
+    if (!editing || !report?.id || !isSupabaseConfigured()) return;
+    const timer = setInterval(async () => {
+      setSaveStatus('saving');
+      try {
+        await reportsAPI.upsert(report);
+        clearDraft(report.id);
+        setSaveStatus('saved');
+        setLastSavedAt(new Date());
+      } catch {
+        setSaveStatus('error');
+      }
+    }, 60000);
+    return () => clearInterval(timer);
+  }, [editing, report, clearDraft]);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -922,25 +970,63 @@ export default function App() {
     return () => clearTimeout(settingsTimeout);
   }, [settingsAutoSave, settingsWhatsAppEnabled, settingsWhatsAppNumber, settingsWhatsAppMessage, settingsEmailEnabled, settingsEmailFrom, settingsEmailSignature, settingsAIEnabled, settingsAIProvider, settingsAIModel, settingsAIKey, settingsAIAssistance_conclusions, settingsAIAssistance_recommendations, settingsAIAssistance_validation, settingsCompanyName, settingsCompanyRCCM, settingsCompanyNINEA]);
 
-  const openNew=useCallback(()=>{setReport(newReport());setSection(0);setEditing(true);setView("form");}, []);
-  const openEdit=useCallback(r=>{setReport({...r});setSection(0);setEditing(true);setView("form");}, []);
-  const openView=useCallback(r=>{setReport({...r});setSection(0);setEditing(false);setView("form");}, []);
-  const save=useCallback(()=>{
-    const errors = validateReport(report);
-    if (Object.keys(errors).length > 0) {
-      const errorMessage = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
-      alert('Erreurs de validation:\n' + errorMessage);
-      return false;
+  const openNew=useCallback(()=>{setShareOpen(false);setSaveStatus('idle');setReport(newReport());setSection(0);setEditing(true);setView("form");}, []);
+  const openEdit=useCallback(r=>{setShareOpen(false);setSaveStatus('idle');setReport({...r});setSection(0);setEditing(true);setView("form");}, []);
+  const openView=useCallback(r=>{setShareOpen(false);setSaveStatus('idle');setReport({...r});setSection(0);setEditing(false);setView("form");}, []);
+
+  // Explicit save: async, awaits Supabase, shows status, keeps user on form if error
+  const save=useCallback(async()=>{
+    const snap={...report};
+    setSaveStatus('saving');
+    // Optimistic update of local list immediately
+    setReports(prev=>{const i=prev.findIndex(r=>r.id===snap.id);return i>=0?prev.map(r=>r.id===snap.id?snap:r):[snap,...prev];});
+    if(isSupabaseConfigured()){
+      try{
+        await reportsAPI.upsert(snap);
+        clearDraft(snap.id);
+        setSaveStatus('saved');
+        setLastSavedAt(new Date());
+        setView("dashboard");
+      }catch(e){
+        console.error('Supabase upsert error:',e);
+        setSaveStatus('error');
+        writeDraft(snap); // ensure draft is preserved as fallback
+        alert('Erreur de sauvegarde (Supabase). Votre rapport est préservé en brouillon local — réessayez dans quelques instants.');
+      }
+    }else{
+      setSaveStatus('saved');
+      setLastSavedAt(new Date());
+      setView("dashboard");
     }
-    setReports(prev=>{const i=prev.findIndex(r=>r.id===report.id);return i>=0?prev.map(r=>r.id===report.id?report:r):[report,...prev];});
-    if (isSupabaseConfigured()) reportsAPI.upsert(report).catch(e=>console.error('Supabase upsert error:',e));
-    setView("dashboard");
     return true;
-  }, [report]);
-  const del=useCallback(id=>{if(window.confirm("Supprimer ce rapport ?")){setReports(p=>p.filter(r=>r.id!==id));if(isSupabaseConfigured())reportsAPI.delete(id).catch(e=>console.error('Supabase delete error:',e));}}, []);
-  const upd=useCallback((f,v)=>setReport(p=>({...p,[f]:v})), []);
-  const updE=useCallback((ei,f,v)=>setReport(p=>({...p,etapes:p.etapes.map((e,i)=>i===ei?{...e,[f]:v}:e)})), []);
-  const updSP=useCallback((key,photos)=>setReport(p=>({...p,sectionPhotos:{...(p.sectionPhotos||defSP()),[key]:photos}})), []);
+  },[report,clearDraft,writeDraft]);
+
+  const del=useCallback(id=>{if(window.confirm("Supprimer ce rapport ?")){setReports(p=>p.filter(r=>r.id!==id));clearDraft(id);if(isSupabaseConfigured())reportsAPI.delete(id).catch(e=>console.error('Supabase delete error:',e));}}, [clearDraft]);
+
+  // upd/updE/updSP: trigger debounced draft save on every change (crash safety)
+  const upd=useCallback((f,v)=>{
+    setReport(p=>{
+      const updated={...p,[f]:v};
+      if(draftTimerRef.current)clearTimeout(draftTimerRef.current);
+      draftTimerRef.current=setTimeout(()=>writeDraft(updated),5000);
+      return updated;
+    });
+  },[writeDraft]);
+  const updE=useCallback((ei,f,v)=>{
+    setReport(p=>{
+      const updated={...p,etapes:p.etapes.map((e,i)=>i===ei?{...e,[f]:v}:e)};
+      if(draftTimerRef.current)clearTimeout(draftTimerRef.current);
+      draftTimerRef.current=setTimeout(()=>writeDraft(updated),5000);
+      return updated;
+    });
+  },[writeDraft]);
+  const updSP=useCallback((key,photos)=>{
+    setReport(p=>{
+      const updated={...p,sectionPhotos:{...(p.sectionPhotos||defSP()),[key]:photos}};
+      writeDraft(updated); // photos: save draft immediately (no debounce)
+      return updated;
+    });
+  },[writeDraft]);
   const filtered=useMemo(() => reports.filter(r=>[r.clientNom,r.clientPrenom,r.id,r.address,r.problemType].join(" ").toLowerCase().includes(search.toLowerCase())), [reports, search]);
 
   // Google Calendar integration functions
@@ -1086,6 +1172,23 @@ export default function App() {
       minHeight: '100vh'
     }}>
       <Navbar currentView={view} setView={setView} setReport={setReport} setSection={setSection} setEditing={setEditing} />
+      {draftNotice&&(
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div className="bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 flex items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <AlertCircle size={18} className="text-amber-600 shrink-0"/>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Brouillon non sauvegardé détecté</p>
+                <p className="text-xs text-amber-600">Rapport {draftNotice.id} — {draftNotice.clientNom||"Sans nom"} {draftNotice.clientPrenom||""} — non enregistré dans Supabase</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={()=>{setDraftNotice(null);openEdit(draftNotice);}} className="px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition">Récupérer</button>
+              <button onClick={()=>{clearDraft(draftNotice.id);setDraftNotice(null);}} className="px-3 py-1.5 bg-white border border-amber-300 text-amber-700 text-xs font-semibold rounded-lg hover:bg-amber-50 transition">Ignorer</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* ── 3 Statistics Cards ── */}
         <div className="grid grid-cols-3 gap-4 mb-8">
@@ -2291,9 +2394,12 @@ export default function App() {
         <Logo/>
         <div className="flex-1 min-w-0 ml-1"><div className="text-xs font-mono text-slate-400">{report.id}</div><div className="text-sm font-semibold text-slate-700 truncate">{report.clientCivilite} {report.clientNom||"Nouveau rapport"} {report.clientPrenom}</div></div>
         <StatusBadge status={report.status}/>
+        {saveStatus==='saving'&&<span className="text-xs text-slate-400 flex items-center gap-1 shrink-0"><Loader2 size={12} className="animate-spin"/>Sauvegarde...</span>}
+        {saveStatus==='saved'&&lastSavedAt&&<span className="text-xs text-green-600 flex items-center gap-1 shrink-0"><Check size={12}/>Enregistré {lastSavedAt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>}
+        {saveStatus==='error'&&<span className="text-xs text-red-500 flex items-center gap-1 shrink-0"><AlertCircle size={12}/>Erreur — brouillon local</span>}
         <button onClick={()=>setShareOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 text-white rounded-xl text-xs font-semibold hover:bg-blue-800 transition"><Share2 size={13}/>Partager</button>
         <PDFDriveButtons report={report}/>
-        {editing?<button onClick={save} className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-700 transition"><Save size={13}/>Enregistrer</button>:<button onClick={()=>setEditing(true)} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition"><Edit size={13}/>Modifier</button>}
+        {editing?<button onClick={save} disabled={saveStatus==='saving'} className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-700 disabled:opacity-60 transition">{saveStatus==='saving'?<><Loader2 size={13} className="animate-spin"/>Sauvegarde...</>:<><Save size={13}/>Enregistrer</>}</button>:<button onClick={()=>{setSaveStatus('idle');setEditing(true);}} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold hover:bg-slate-200 transition"><Edit size={13}/>Modifier</button>}
       </header>
       <div className="h-1 bg-slate-100"><div className="h-full bg-gradient-to-r from-sky-400 to-blue-700 transition-all duration-500 rounded-full" style={{width:`${prog}%`}}/></div>
       <div className="flex flex-1 overflow-hidden">
@@ -2305,7 +2411,7 @@ export default function App() {
           <div className="flex items-center justify-between mt-8 pt-5 border-t border-slate-100">
             <button onClick={()=>setSection(Math.max(0,section-1))} disabled={section===0} className="flex items-center gap-1.5 px-4 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"><ArrowLeft size={13}/>Précédent</button>
             <span className="text-xs text-slate-400">{section+1} / {SECTIONS.length}</span>
-            {section<SECTIONS.length-1?<button onClick={()=>setSection(Math.min(SECTIONS.length-1,section+1))} className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition">Suivant<ArrowRight size={13}/></button>:editing&&<button onClick={save} className="flex items-center gap-1.5 px-5 py-2 text-sm text-white bg-blue-700 rounded-xl hover:bg-blue-800 transition font-semibold"><Save size={13}/>Finaliser le rapport</button>}
+            {section<SECTIONS.length-1?<button onClick={()=>setSection(Math.min(SECTIONS.length-1,section+1))} className="flex items-center gap-1.5 px-4 py-2 text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition">Suivant<ArrowRight size={13}/></button>:editing&&<button onClick={save} disabled={saveStatus==='saving'} className="flex items-center gap-1.5 px-5 py-2 text-sm text-white bg-blue-700 rounded-xl hover:bg-blue-800 disabled:opacity-60 transition font-semibold">{saveStatus==='saving'?<><Loader2 size={13} className="animate-spin"/>Sauvegarde...</>:<><Save size={13}/>Finaliser le rapport</>}</button>}
           </div>
         </main>
       </div>
