@@ -828,7 +828,6 @@ export default function App() {
         try {
           const data = await reportsAPI.getAll();
           setReports(data);
-          localStorage.setItem('esmeau_reports', JSON.stringify(data));
           return;
         } catch (e) {
           console.error('Supabase load failed, using localStorage:', e);
@@ -843,7 +842,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('esmeau_reports', JSON.stringify(reports));
+    if (isSupabaseConfigured()) return;
+    const saveReports = () => {
+      try {
+        localStorage.setItem('esmeau_reports', JSON.stringify(reports));
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          // Strip photos from reports to reduce size, keep text data
+          const stripped = reports.map(r => ({
+            ...r,
+            photos: [],
+            sections: r.sections ? r.sections.map(s => ({ ...s, photos: [] })) : r.sections,
+          }));
+          try {
+            localStorage.setItem('esmeau_reports', JSON.stringify(stripped));
+            console.warn('localStorage quota exceeded: photos were not saved locally. Use Supabase for full persistence.');
+          } catch (e2) {
+            console.error('localStorage unavailable even after stripping photos:', e2);
+          }
+        }
+      }
+    };
+    saveReports();
   }, [reports]);
 
   // Load settings from localStorage on mount
