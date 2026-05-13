@@ -1210,13 +1210,15 @@ export default function App() {
     };
     
     const handleOpenView = (r) => {
+      setShareOpen(false);
       setReport({...r});
       setSection(0);
       setEditing(false);
       setView("form");
     };
-    
+
     const handleOpenEdit = (r) => {
+      setShareOpen(false);
       setReport({...r});
       setSection(0);
       setEditing(true);
@@ -1674,12 +1676,13 @@ export default function App() {
           {/* Results Summary */}
           {filteredAndSortedReports.length > 0 && (
             <div className="mt-4 text-sm text-slate-600 text-center">
-              Affichage de {filteredAndSortedReports.length} rapport{filteredAndSortedReports.length > 1 ? 's' : ''} 
+              Affichage de {filteredAndSortedReports.length} rapport{filteredAndSortedReports.length > 1 ? 's' : ''}
               {selectedReports.size > 0 && ` • ${selectedReports.size} sélectionné${selectedReports.size > 1 ? 's' : ''}`}
             </div>
           )}
         </div>
       </div>
+      {shareOpen && report && <ShareModal report={report} onClose={() => setShareOpen(false)} />}
     );
   }
 
