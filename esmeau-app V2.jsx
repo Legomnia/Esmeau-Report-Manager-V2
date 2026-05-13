@@ -1434,6 +1434,7 @@ export default function App() {
     };
 
     return (
+      <>
       <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" style={{
         minHeight: '100vh'
       }}>
@@ -1786,6 +1787,7 @@ export default function App() {
         </div>
       </div>
       {shareOpen && report && <ShareModal report={report} onClose={() => setShareOpen(false)} />}
+      </>
     );
   }
 
