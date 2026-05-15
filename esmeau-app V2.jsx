@@ -904,7 +904,8 @@ export default function App() {
     const timer = setInterval(async () => {
       setSaveStatus('saving');
       try {
-        await reportsAPI.upsert(report);
+        const updatedSP = await reportsAPI.upsert(report);
+        if (updatedSP) setReport(prev => ({ ...prev, sectionPhotos: updatedSP }));
         clearDraft(report.id);
         setSaveStatus('saved');
         setLastSavedAt(new Date());
@@ -983,13 +984,16 @@ export default function App() {
     setReports(prev=>{const i=prev.findIndex(r=>r.id===snap.id);return i>=0?prev.map(r=>r.id===snap.id?snap:r):[snap,...prev];});
     if(isSupabaseConfigured()){
       try{
-        await reportsAPI.upsert(snap);
+        const updatedSP = await reportsAPI.upsert(snap);
+        if (updatedSP) setReport(prev => ({ ...prev, sectionPhotos: updatedSP }));
         clearDraft(snap.id);
         setSaveStatus('saved');
         setLastSavedAt(new Date());
         setView("dashboard");
       }catch(e){
-        console.error('Supabase upsert error:',e);
+        console.error('Supabase upsert error:', e?.message || e?.code || e);
+        if (e?.details) console.error('Details:', e.details);
+        if (e?.hint) console.error('Hint:', e.hint);
         setSaveStatus('error');
         writeDraft(snap); // ensure draft is preserved as fallback
         alert('Erreur de sauvegarde (Supabase). Votre rapport est préservé en brouillon local — réessayez dans quelques instants.');
@@ -1007,7 +1011,9 @@ export default function App() {
   // autoSaveDraft: localStorage + Supabase upsert (debounced 5s on every field change)
   const autoSaveDraft=useCallback((updated)=>{
     writeDraft(updated);
-    if(isSupabaseConfigured())reportsAPI.upsert(updated).catch(e=>console.error('Auto-save error:',e));
+    if(isSupabaseConfigured())reportsAPI.upsert(updated).then(updatedSP=>{
+      if(updatedSP)setReport(prev=>({...prev,sectionPhotos:updatedSP}));
+    }).catch(e=>console.error('Auto-save error:',e));
   },[writeDraft]);
 
   // upd/updE/updSP: trigger debounced draft save on every change (crash safety)

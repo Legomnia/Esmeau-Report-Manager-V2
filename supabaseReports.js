@@ -11,6 +11,70 @@ export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabaseKey && supabase);
 }
 
+const STORAGE_BUCKET = 'report-photos';
+
+// Strip base64 data URLs from section_photos before sending to Supabase.
+// Remote https URLs (already uploaded) are preserved as-is.
+function stripPhotoData(sectionPhotos) {
+  const out = {};
+  for (const [key, photos] of Object.entries(sectionPhotos ?? {})) {
+    out[key] = (photos ?? []).map(p => ({
+      ...p,
+      url: p.url?.startsWith('data:') ? '' : (p.url ?? ''),
+    }));
+  }
+  return out;
+}
+
+// Upload base64 photos to Supabase Storage and return updated sectionPhotos
+// with remote URLs replacing base64 data. Non-base64 URLs are left untouched.
+async function uploadSectionPhotos(reportId, sectionPhotos) {
+  const out = {};
+  for (const [key, photos] of Object.entries(sectionPhotos ?? {})) {
+    out[key] = await Promise.all((photos ?? []).map(async (photo, i) => {
+      if (!photo.url?.startsWith('data:')) return photo;
+      try {
+        const res = await fetch(photo.url);
+        const blob = await res.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        const path = `${reportId}/${key}/${i}_${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .upload(path, blob, { upsert: true, contentType: blob.type });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+        return { ...photo, url: data.publicUrl };
+      } catch (e) {
+        console.error(`Photo upload failed [${key}[${i}]]:`, e?.message || e);
+        return { ...photo, url: '' };
+      }
+    }));
+  }
+  return out;
+}
+
+// Delete all photos stored in Storage for a given report id.
+async function deleteReportPhotos(reportId) {
+  try {
+    const { data: folders } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .list(reportId);
+    if (!folders?.length) return;
+    for (const folder of folders) {
+      const { data: files } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .list(`${reportId}/${folder.name}`);
+      if (files?.length) {
+        await supabase.storage
+          .from(STORAGE_BUCKET)
+          .remove(files.map(f => `${reportId}/${folder.name}/${f.name}`));
+      }
+    }
+  } catch (e) {
+    console.error('Storage cleanup error:', e?.message || e);
+  }
+}
+
 // Maps a React report object → Supabase row (snake_case, matching schema.sql)
 function reportToRow(r) {
   return {
@@ -60,7 +124,7 @@ function reportToRow(r) {
     investigation: r.investigation ?? [],
     moyens: r.moyens ?? {},
     etapes: r.etapes ?? [],
-    section_photos: r.sectionPhotos ?? {},
+    section_photos: stripPhotoData(r.sectionPhotos),
   };
 }
 
@@ -128,11 +192,15 @@ export const reportsAPI = {
     return data.map(rowToReport);
   },
 
+  // Upload any base64 photos to Storage, then upsert the DB row.
+  // Returns the updated sectionPhotos (with remote URLs) so callers can update React state.
   async upsert(report) {
+    const sectionPhotos = await uploadSectionPhotos(report.id, report.sectionPhotos);
     const { error } = await supabase
       .from('reports')
-      .upsert(reportToRow(report), { onConflict: 'id' });
+      .upsert(reportToRow({ ...report, sectionPhotos }), { onConflict: 'id' });
     if (error) throw error;
+    return sectionPhotos;
   },
 
   async delete(id) {
@@ -141,5 +209,6 @@ export const reportsAPI = {
       .delete()
       .eq('id', id);
     if (error) throw error;
+    await deleteReportPhotos(id);
   },
 };
