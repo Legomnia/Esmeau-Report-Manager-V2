@@ -863,7 +863,8 @@ export default function App() {
               const draft = JSON.parse(localStorage.getItem(key));
               if (!draft?._draftAt) continue;
               const inDb = data.find(r => r.id === draft.id);
-              if (!inDb || draft._draftAt > new Date(inDb.date).getTime()) drafts.push(draft);
+              const dbTime = inDb?.updated_at ? new Date(inDb.updated_at).getTime() : 0;
+              if (!inDb || draft._draftAt > dbTime) drafts.push(draft);
             } catch {}
           }
           if (drafts.length > 0) {
@@ -970,7 +971,7 @@ export default function App() {
     return () => clearTimeout(settingsTimeout);
   }, [settingsAutoSave, settingsWhatsAppEnabled, settingsWhatsAppNumber, settingsWhatsAppMessage, settingsEmailEnabled, settingsEmailFrom, settingsEmailSignature, settingsAIEnabled, settingsAIProvider, settingsAIModel, settingsAIKey, settingsAIAssistance_conclusions, settingsAIAssistance_recommendations, settingsAIAssistance_validation, settingsCompanyName, settingsCompanyRCCM, settingsCompanyNINEA]);
 
-  const openNew=useCallback(()=>{setShareOpen(false);setSaveStatus('idle');setReport(newReport());setSection(0);setEditing(true);setView("form");}, []);
+  const openNew=useCallback(()=>{setShareOpen(false);setSaveStatus('idle');const newR=newReport();setReport(newR);setSection(0);setEditing(true);setView("form");if(isSupabaseConfigured())reportsAPI.upsert(newR).catch(e=>console.error('Supabase init error:',e));}, []);
   const openEdit=useCallback(r=>{setShareOpen(false);setSaveStatus('idle');setReport({...r});setSection(0);setEditing(true);setView("form");}, []);
   const openView=useCallback(r=>{setShareOpen(false);setSaveStatus('idle');setReport({...r});setSection(0);setEditing(false);setView("form");}, []);
 
@@ -1003,23 +1004,29 @@ export default function App() {
 
   const del=useCallback(id=>{if(window.confirm("Supprimer ce rapport ?")){setReports(p=>p.filter(r=>r.id!==id));clearDraft(id);if(isSupabaseConfigured())reportsAPI.delete(id).catch(e=>console.error('Supabase delete error:',e));}}, [clearDraft]);
 
+  // autoSaveDraft: localStorage + Supabase upsert (debounced 5s on every field change)
+  const autoSaveDraft=useCallback((updated)=>{
+    writeDraft(updated);
+    if(isSupabaseConfigured())reportsAPI.upsert(updated).catch(e=>console.error('Auto-save error:',e));
+  },[writeDraft]);
+
   // upd/updE/updSP: trigger debounced draft save on every change (crash safety)
   const upd=useCallback((f,v)=>{
     setReport(p=>{
       const updated={...p,[f]:v};
       if(draftTimerRef.current)clearTimeout(draftTimerRef.current);
-      draftTimerRef.current=setTimeout(()=>writeDraft(updated),5000);
+      draftTimerRef.current=setTimeout(()=>autoSaveDraft(updated),5000);
       return updated;
     });
-  },[writeDraft]);
+  },[autoSaveDraft]);
   const updE=useCallback((ei,f,v)=>{
     setReport(p=>{
       const updated={...p,etapes:p.etapes.map((e,i)=>i===ei?{...e,[f]:v}:e)};
       if(draftTimerRef.current)clearTimeout(draftTimerRef.current);
-      draftTimerRef.current=setTimeout(()=>writeDraft(updated),5000);
+      draftTimerRef.current=setTimeout(()=>autoSaveDraft(updated),5000);
       return updated;
     });
-  },[writeDraft]);
+  },[autoSaveDraft]);
   const updSP=useCallback((key,photos)=>{
     setReport(p=>{
       const updated={...p,sectionPhotos:{...(p.sectionPhotos||defSP()),[key]:photos}};

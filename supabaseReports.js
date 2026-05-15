@@ -69,6 +69,7 @@ function rowToReport(row) {
   return {
     id: row.id,
     date: row.date,
+    updated_at: row.updated_at,
     status: row.status,
     clientCivilite: row.client_civilite,
     clientNom: row.client_nom,
